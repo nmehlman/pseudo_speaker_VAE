@@ -25,11 +25,14 @@ def map_cv_age_to_label(age):
         int: Numerical age label.
     """
     age_mapping = { #TODO update with all ages
-        'twenties': 0,
-        'thirties': 1,
-        'fourties': 2,
-        'fifties': 3,
-        'sixties': 4
+        'teens': 0,
+        'twenties': 1,
+        'thirties': 2,
+        'fourties': 3,
+        'fifties': 4,
+        'sixties': 5,
+        'seventies': 6,
+        'eighties': 7
     }
     return age_mapping.get(age, -1)  # Returns -1 if age is not in the mapping
 
