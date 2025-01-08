@@ -13,3 +13,40 @@ def load_yaml_config(file_path: str) -> dict:
         config = yaml.safe_load(file)
 
     return config
+
+def map_cv_age_to_label(age):
+    """
+    Maps a single age category to a numerical label.
+
+    Args:
+        age (str): Age category as a string.
+
+    Returns:
+        int: Numerical age label.
+    """
+    age_mapping = { #TODO update with all ages
+        'twenties': 0,
+        'thirties': 1,
+        'fourties': 2,
+        'fifties': 3,
+        'sixties': 4
+    }
+    return age_mapping.get(age, -1)  # Returns -1 if age is not in the mapping
+
+def map_cv_gender_to_label(gender):
+    """
+    Maps a single gender category to a numerical label.
+
+    Args:
+        gender (str): Gender category as a string.
+
+    Returns:
+        int: Numerical gender label.
+    """
+    gender_mapping = {
+        'male': 0,
+        'female': 1,
+        'other': 2
+    }
+    return gender_mapping.get(gender, -1)  # Returns -1 if gender is not in the mapping
+

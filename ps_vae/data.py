@@ -3,17 +3,25 @@ from torch.utils.data import Dataset
 import os
 from typing import Dict, Union, Callable
 from torch.utils.data import DataLoader, random_split
+from utils import map_cv_gender_to_label, map_cv_age_to_label
 
 METADATA_TRANSFORMS = {
-    "gender": lambda x: int(x['']),
+    "gender": map_cv_gender_to_label,
+    "age": map_cv_age_to_label,
+    "age_and_gender": lambda x: (map_cv_age_to_label(x), map_cv_gender_to_label(x))
 }
 
 class CVEmbeddingDataset(Dataset):
     def __init__(
-        self, data_root: str, split: str = "train", metadata_transform: callable = None
+        self, data_root: str, split: str = "train", metadata_transform: str | None = None
     ):
-
-        self.metadata_transform = metadata_transform
+        
+        # Setup function to parse metadata
+        if metadata_transform is not None:
+            assert metadata_transform in METADATA_TRANSFORMS, f"Invalid metadata transform: {metadata_transform}"
+            metadata_transform = METADATA_TRANSFORMS[metadata_transform]
+        else:
+            self.metadata_transform = None
 
         # Read metadata file
         metadata_file = os.path.join(data_root, f"{split}.tsv")
