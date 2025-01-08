@@ -13,7 +13,7 @@ METADATA_TRANSFORMS = {
 
 class CVEmbeddingDataset(Dataset):
     def __init__(
-        self, data_root: str, split: str = "train", metadata_transform: str | None = None
+        self, data_root: str, split: str = "train", metadata_transform: str = None
     ):
         
         # Setup function to parse metadata
@@ -43,8 +43,9 @@ class CVEmbeddingDataset(Dataset):
             info.pop("path").replace(".mp3", ".pth"): info for info in self.metadata
         }
 
+        # Will only load existing embeddings in directory, not all files in metadata
         self.embed_dir = os.path.join(data_root, "embeds", split)
-        self.embedding_files = os.listdir(self.embed_dir)
+        self.embedding_files = [file for file in os.listdir(self.embed_dir) if file.endswith(".pth")]
 
     def __len__(self):
         return len(self.embedding_files)
@@ -52,6 +53,8 @@ class CVEmbeddingDataset(Dataset):
     def __getitem__(self, idx):
 
         filename = self.embedding_files[idx]
+        print(filename)
+
 
         # Load embedding
         embed_file = os.path.join(self.embed_dir, filename)
@@ -131,8 +134,8 @@ def get_dataloaders(
 if __name__ == "__main__":
     
     dataset_kwargs = {
-        "data_root": "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/",
-        "split": "train"
+        "data_root": '/Users/nick/Desktop/ARTS/Pseudo-Speaker Generation/test_data',
+        "split": "debug"
     }
                       
     dataset = CVEmbeddingDataset(**dataset_kwargs)
