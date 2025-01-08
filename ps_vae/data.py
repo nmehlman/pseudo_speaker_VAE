@@ -132,8 +132,8 @@ def get_dataloaders(
 if __name__ == "__main__":
     
     dataset_kwargs = {
-        "data_root": '/Users/nick/Desktop/ARTS/Pseudo-Speaker Generation/test_data',
-        "split": "debug"
+        "data_root": '/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en',
+        "split": "train"
     }
                       
     dataset = CVEmbeddingDataset(**dataset_kwargs)
