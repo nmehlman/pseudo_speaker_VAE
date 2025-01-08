@@ -53,9 +53,7 @@ class CVEmbeddingDataset(Dataset):
     def __getitem__(self, idx):
 
         filename = self.embedding_files[idx]
-        print(filename)
-
-
+        
         # Load embedding
         embed_file = os.path.join(self.embed_dir, filename)
         embed = torch.load(embed_file, weights_only=True)
@@ -150,5 +148,5 @@ if __name__ == "__main__":
         all_genders.append(metadata['gender'])
 
 
-    print(all_ages)
-    print(all_genders)
+    print(set(all_ages))
+    print(set(all_genders))
