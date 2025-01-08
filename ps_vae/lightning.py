@@ -2,13 +2,14 @@ import pytorch_lightning as pl
 import torch.nn as nn
 from model import VAEModel
 import torch
+from torch.optim import Adam
 
 
 class PseudoSpeakerVAE(pl.LightningModule):
     def __init__(self, **hparams):
         super().__init__()
-        self.hparams = hparams
-        self.log_hyperparams()
+
+        self.save_hyperparameters()
 
         self.model = VAEModel(**hparams["model"])
 
@@ -31,3 +32,6 @@ class PseudoSpeakerVAE(pl.LightningModule):
         total_loss = mse_loss + self.kl_loss_weight * kl_loss
 
         return {"loss": total_loss}
+
+    def configure_optimizers(self):
+        return Adam(self.model.parameters(), **self.hparams["optimizer"])
