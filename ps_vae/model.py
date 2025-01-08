@@ -2,8 +2,8 @@ from typing import Tuple
 import torch.nn as nn
 import torch
 
-class VAEModel(nn.Module):
 
+class VAEModel(nn.Module):
     def __init__(self, input_dim: int = 512, latent_dim: int = 64):
         super().__init__()
 
@@ -12,7 +12,7 @@ class VAEModel(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(512, latent_dim)
+            nn.Linear(512, latent_dim),
         )
 
         self.encoder_sigma = nn.Sequential(
@@ -20,18 +20,20 @@ class VAEModel(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(512, latent_dim)
+            nn.Linear(512, latent_dim),
         )
 
-        self.decoder  = nn.Sequential(
+        self.decoder = nn.Sequential(
             nn.Linear(latent_dim, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
-            nn.Linear(512, input_dim)
+            nn.Linear(512, input_dim),
         )
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Forward pass through the VAE model.
 
@@ -44,15 +46,16 @@ class VAEModel(nn.Module):
                 - mu (torch.Tensor): Mean of the latent space distribution of shape (batch_size, latent_dim).
                 - sigma (torch.Tensor): Standard deviation of the latent space distribution of shape (batch_size, latent_dim).
         """
-    
+
         mu = self.encoder_mu(x)
         log_sigma = self.encoder_sigma(x)
-        sigma = torch.exp(0.5*log_sigma)
+        sigma = torch.exp(0.5 * log_sigma)
         z = mu + sigma * torch.randn_like(sigma)
         x_hat = self.decoder(z)
 
         return x_hat, mu, log_sigma
-    
+
+
 if __name__ == "__main__":
     model = VAEModel(784, 20)
     z = torch.randn(32, 784)
