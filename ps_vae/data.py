@@ -137,3 +137,7 @@ if __name__ == "__main__":
         assert 'gender' in metadata, "Gender not in metdata"
         all_ages.append(metadata['age'])
         all_genders.append(metadata['gender'])
+
+
+    print(all_ages)
+    print(all_genders)
