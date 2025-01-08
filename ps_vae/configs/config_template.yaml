@@ -37,8 +37,8 @@ trainer:
 
 # Tensorboard options:
 tensorboard:
-  save_dir: "path"
-  name: "name"
+  save_dir: "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE"
+  name: "debug"
   version: null     # Automatic versioning if set to null (recommended)
 
 
