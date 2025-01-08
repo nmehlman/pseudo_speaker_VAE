@@ -4,6 +4,9 @@ import os
 from typing import Dict, Union, Callable
 from torch.utils.data import DataLoader, random_split
 
+METADATA_TRANSFORMS = {
+    "gender": lambda x: int(x['']),
+}
 
 class CVEmbeddingDataset(Dataset):
     def __init__(
@@ -124,6 +127,13 @@ if __name__ == "__main__":
         "split": "train"
     }
                       
-    dataloder = get_dataloaders(dataset_kwargs=dataset_kwargs, batch_size=16)
-    x,y = next(iter(dataloder))
-    print(x.shape, y)
+    dataset = CVEmbeddingDataset(**dataset_kwargs)
+
+    all_ages = []
+    all_genders = []
+
+    for _, metadata in dataset:
+        assert 'age' in metadata, "Age not in metadata"
+        assert 'gender' in metadata, "Gender not in metdata"
+        all_ages.append(metadata['age'])
+        all_genders.append(metadata['gender'])
