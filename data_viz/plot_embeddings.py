@@ -39,4 +39,4 @@ if __name__ == "__main__":
     legend_labels = [unique_demos[idx] for idx in range(len(unique_demos))]
     plt.legend(handles, legend_labels, title="Demographics")
 
-    plt.savefig(f"plots/raw_embeddings_{DEMOGRAPHIC}_tsne.png")
+    plt.savefig(f"/Users/nmehlman/Desktop/pseudo_speaker_VAE/plots/raw_embeddings_{DEMOGRAPHIC}_tsne.png")
