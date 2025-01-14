@@ -22,7 +22,7 @@ if __name__ == "__main__":
         
         ages.append(sample_info["age"])
         genders.append(sample_info["gender"])
-        accents.append(sample_info.get('accent', "unknown"))
+        accents.append(sample_info.get('accents', "unknown"))
         
     # Get unique values and save to json
     unique_ages = list(set(ages))
