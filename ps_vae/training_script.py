@@ -5,8 +5,8 @@ from utils import load_yaml_config
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from pytorch_lightning.strategies.ddp import DDPStrategy
-from data import get_dataloaders
-from lightning import PseudoSpeakerVAE
+from ps_vae.data import get_dataloaders
+from ps_vae.lightning import PseudoSpeakerVAE
 
 import torch
 from pytorch_lightning.loggers import TensorBoardLogger

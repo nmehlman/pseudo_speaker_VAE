@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 import os
 from typing import Dict, Union, Callable
 from torch.utils.data import DataLoader, random_split
-from utils import map_cv_gender_to_label, map_cv_age_to_label
+from ps_vae.utils import map_cv_gender_to_label, map_cv_age_to_label
 
 METADATA_TRANSFORMS = {
     "gender": lambda x: map_cv_gender_to_label(x['gender']),
@@ -128,25 +128,3 @@ def get_dataloaders(
 
         return loader
 
-
-if __name__ == "__main__":
-    
-    dataset_kwargs = {
-        "data_root": '/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en',
-        "split": "train"
-    }
-                      
-    dataset = CVEmbeddingDataset(**dataset_kwargs)
-
-    all_ages = []
-    all_genders = []
-
-    for _, metadata in dataset:
-        assert 'age' in metadata, "Age not in metadata"
-        assert 'gender' in metadata, "Gender not in metdata"
-        all_ages.append(metadata['age'])
-        all_genders.append(metadata['gender'])
-
-
-    print(set(all_ages))
-    print(set(all_genders))
