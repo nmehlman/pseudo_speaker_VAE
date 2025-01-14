@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+import os
 from ps_vae.data import CVEmbeddingDataset
 
 if __name__ == "__main__":
@@ -9,6 +10,7 @@ if __name__ == "__main__":
     DEMOGRAPHIC = "accents"
 
     data_root = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
+    save_dir = "/Users/nmehlman/Desktop/pseudo_speaker_VAE/plots/"
     dataset = CVEmbeddingDataset(data_root, split="train")
 
     # Randomly sample N_SAMPLES from the dataset
@@ -39,4 +41,4 @@ if __name__ == "__main__":
     legend_labels = [unique_demos[idx] for idx in range(len(unique_demos))]
     plt.legend(handles, legend_labels, title="Demographics")
 
-    plt.savefig(f"/Users/nmehlman/Desktop/pseudo_speaker_VAE/plots/raw_embeddings_{DEMOGRAPHIC}_tsne.png")
+    plt.savefig(os.path.join(save_dir,f"raw_embeddings_{DEMOGRAPHIC}_tsne.png"))
