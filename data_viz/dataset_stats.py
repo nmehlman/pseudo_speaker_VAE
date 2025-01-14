@@ -4,6 +4,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
+import tqdm
 
 
 if __name__ == "__main__":
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     ages = []
     genders = []
     accents = []
-    for _, sample_info in dataset:
+    for _, sample_info in tqdm.tqdm(dataset, desc='processing samples'):
         
         ages.append(sample_info["age"])
         genders.append(sample_info["gender"])
