@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 import torch.nn as nn
-from model import VAEModel
+from ps_vae.model import VAEModel
 import torch
 from torch.optim import Adam
 
