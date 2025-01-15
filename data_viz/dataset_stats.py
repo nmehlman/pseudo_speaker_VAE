@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
 import tqdm
+from multiprocessing import Pool
 
 
 if __name__ == "__main__":
@@ -14,15 +15,18 @@ if __name__ == "__main__":
     save_dir = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/"
     split = "train"
     dataset = CVEmbeddingDataset(data_root, split=split)
+    processes = 8
     
-    ages = []
-    genders = []
-    accents = []
-    for _, sample_info in tqdm.tqdm(dataset, desc='processing samples'):
-        
-        ages.append(sample_info["age"])
-        genders.append(sample_info["gender"])
-        accents.append(sample_info.get('accents', "unknown"))
+    def process_sample(sample_info):
+        age = sample_info["age"]
+        gender = sample_info["gender"]
+        accent = sample_info.get('accents', "unknown")
+        return age, gender, accent
+
+    with Pool(processes=processes) as pool:
+        results = list(tqdm.tqdm(pool.imap(process_sample, dataset), total=len(dataset), desc='processing samples'))
+
+    ages, genders, accents = zip(*results)
         
     # Get unique values and save to json
     unique_ages = list(set(ages))
