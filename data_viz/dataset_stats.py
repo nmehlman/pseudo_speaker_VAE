@@ -16,6 +16,16 @@ def process_sample(sample):
     return age, gender, accent
 
 
+def process_in_batches(dataset, batch_size=1000):
+    results = []
+    with ThreadPoolExecutor() as executor:
+        for i in tqdm.tqdm(range(0, len(dataset), batch_size), desc='Processing batches'):
+            batch = dataset[i:i + batch_size]
+            batch_results = list(executor.map(process_sample, batch))
+            results.extend(batch_results)
+    return results
+
+
 if __name__ == "__main__":
     # Load dataset
     data_root = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
@@ -23,12 +33,8 @@ if __name__ == "__main__":
     split = "train"
     dataset = CVEmbeddingDataset(data_root, split=split)
 
-    # Set up ThreadPoolExecutor
-    max_workers = min(32, os.cpu_count() + 4)  # Use a reasonable number of threads
-
-    # Process samples in parallel
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        results = list(tqdm.tqdm(executor.map(process_sample, dataset), total=len(dataset), desc='Processing samples'))
+    # Process dataset in batches
+    results = process_in_batches(dataset)
 
     # Extract results
     ages, genders, accents = zip(*results)
