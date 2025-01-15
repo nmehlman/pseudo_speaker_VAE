@@ -16,34 +16,6 @@ AGE_GROUPINGS = {
     "nineties": "Old",
 }
 
-def stratified_sampling(dataset, n_samples, stratification_fcn=None, filter_fcn=None):
-   
-    metadata = dataset.metadata
-    files = dataset.embedding_files
-    
-    if filter_fcn is None: # Get list of valid sample indexes
-        valid_samples = list(range(len(files)))
-    else:
-        valid_samples = [i for i in range(len(files)) if filter_fcn(metadata[files[i]])]
-
-    if stratification_fcn is None:
-        return np.random.choice(valid_samples, n_samples, replace=False)
-
-    else:
-        stratification_valid = [stratification_fcn(metadata[files[i]]) for i in valid_samples] # Set strat. value for each sample
-        
-        unique_stratifications = list(set(stratification_valid))
-
-        strat_samples = []
-        for strat in unique_stratifications:
-            strat_idxs_valid = [i for i in range(len(stratification_valid)) if stratification_valid[i] == strat]
-            group_samples_valid = np.random.choice(strat_idxs_valid, n_samples // len(unique_stratifications), replace=False)
-            strat_samples.extend([valid_samples[i] for i in group_samples_valid])
-
-        return strat_samples
-
-
-
 if __name__ == "__main__":
 
     N_SAMPLES = 1000
