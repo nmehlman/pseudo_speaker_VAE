@@ -25,7 +25,7 @@ if __name__ == "__main__":
     processes = 1
 
     with Pool(processes=processes) as pool:
-        results = list(tqdm.tqdm(pool.map(process_sample, dataset), total=len(dataset), desc='processing samples'))
+        results = list(tqdm.tqdm(pool.imap(process_sample, dataset), total=len(dataset), desc='processing samples'))
 
     ages, genders, accents = zip(*results)
         
