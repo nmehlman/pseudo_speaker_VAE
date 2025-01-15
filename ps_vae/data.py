@@ -13,8 +13,10 @@ METADATA_TRANSFORMS = {
 
 class CVEmbeddingDataset(Dataset):
     def __init__(
-        self, data_root: str, split: str = "train", metadata_transform: str = None
+        self, data_root: str, split: str = "train", metadata_transform: str = None, metadata_only: bool = False
     ):
+        
+        self.metadata_only = metadata_only
         
         # Setup function to parse metadata
         if metadata_transform is not None:
@@ -53,10 +55,6 @@ class CVEmbeddingDataset(Dataset):
     def __getitem__(self, idx):
 
         filename = self.embedding_files[idx]
-        
-        # Load embedding
-        embed_file = os.path.join(self.embed_dir, filename)
-        embed = torch.load(embed_file, weights_only=True)
 
         # Load metadata
         metadata = self.metadata[filename]
@@ -64,7 +62,15 @@ class CVEmbeddingDataset(Dataset):
         if self.metadata_transform is not None:  # Apply transform if provided
             metadata = self.metadata_transform(metadata)
 
-        return embed.squeeze(), metadata
+        if self.metadata_only:
+            return metadata
+        
+        else:
+            # Load embedding
+            embed_file = os.path.join(self.embed_dir, filename)
+            embed = torch.load(embed_file, weights_only=True)
+
+            return embed.squeeze(), metadata
 
 
 def get_dataloaders(

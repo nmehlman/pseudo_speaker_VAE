@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
 import tqdm
-from concurrent.futures import ThreadPoolExecutor
 
 
 def process_sample(sample):
@@ -16,30 +15,17 @@ def process_sample(sample):
     return age, gender, accent
 
 
-def process_dataset(dataset, batch_size=1000, max_workers=8):
-    """Process the dataset in smaller batches to avoid stalling."""
-    results = []
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for i in tqdm.tqdm(range(0, len(dataset), batch_size), desc='Processing batches'):
-            batch = [dataset[j] for j in range(i, min(i + batch_size, len(dataset)))]
-            future_to_sample = {executor.submit(process_sample, sample): sample for sample in batch}
-
-            for future in tqdm.tqdm(future_to_sample, desc=f'Processing batch {i // batch_size + 1}', leave=False):
-                results.append(future.result())
-
-    return results
-
-
 if __name__ == "__main__":
     # Load dataset
     data_root = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
     save_dir = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/"
     split = "train"
-    dataset = CVEmbeddingDataset(data_root, split=split)
+    dataset = CVEmbeddingDataset(data_root, split=split, metadata_only=True)
 
-    # Process dataset
-    results = process_dataset(dataset)
+    # Process dataset with a simple for loop
+    results = []
+    for sample in tqdm.tqdm(dataset, total=len(dataset), desc='Processing samples'):
+        results.append(process_sample(sample))
 
     # Extract results
     ages, genders, accents = zip(*results)
