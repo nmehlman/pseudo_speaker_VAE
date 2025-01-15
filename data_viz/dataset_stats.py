@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
 import tqdm
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 
 def process_sample(sample):
@@ -26,13 +26,12 @@ if __name__ == "__main__":
     # Set up ThreadPoolExecutor
     max_workers = min(32, os.cpu_count() + 4)  # Use a reasonable number of threads
 
+    # Process samples in parallel
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(process_sample, sample): sample for sample in dataset}
-        results = list(tqdm.tqdm(as_completed(futures), total=len(dataset), desc='Processing samples'))
+        results = list(tqdm.tqdm(executor.map(process_sample, dataset), total=len(dataset), desc='Processing samples'))
 
     # Extract results
-    processed_results = [future.result() for future in results]
-    ages, genders, accents = zip(*processed_results)
+    ages, genders, accents = zip(*results)
 
     # Get unique values and save to json
     unique_ages = list(set(ages))
