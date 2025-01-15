@@ -22,7 +22,7 @@ if __name__ == "__main__":
     save_dir = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/"
     split = "train"
     dataset = CVEmbeddingDataset(data_root, split=split)
-    processes = 1
+    processes = 2
 
     with Pool(processes=processes) as pool:
         results = list(tqdm.tqdm(pool.imap(process_sample, dataset), total=len(dataset), desc='processing samples'))
