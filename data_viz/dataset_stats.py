@@ -7,6 +7,13 @@ from collections import Counter
 import tqdm
 from multiprocessing import Pool
 
+def process_sample(sample):
+    sample_info = sample[1]
+    age = sample_info["age"]
+    gender = sample_info["gender"]
+    accent = sample_info.get('accents', "unknown")
+    return age, gender, accent
+
 
 if __name__ == "__main__":
    
@@ -16,16 +23,9 @@ if __name__ == "__main__":
     split = "train"
     dataset = CVEmbeddingDataset(data_root, split=split)
     processes = 8
-    
-    def process_sample(sample):
-        sample_info = sample[1]
-        age = sample_info["age"]
-        gender = sample_info["gender"]
-        accent = sample_info.get('accents', "unknown")
-        return age, gender, accent
 
     with Pool(processes=processes) as pool:
-        results = list(tqdm.tqdm(pool.imap(process_sample, dataset), total=len(dataset), desc='processing samples'))
+        results = list(tqdm.tqdm(pool.map(process_sample, dataset), total=len(dataset), desc='processing samples'))
 
     ages, genders, accents = zip(*results)
         
