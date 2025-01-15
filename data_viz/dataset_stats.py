@@ -17,7 +17,8 @@ if __name__ == "__main__":
     dataset = CVEmbeddingDataset(data_root, split=split)
     processes = 8
     
-    def process_sample(sample_info):
+    def process_sample(sample):
+        sample_info = sample[1]
         age = sample_info["age"]
         gender = sample_info["gender"]
         accent = sample_info.get('accents', "unknown")
