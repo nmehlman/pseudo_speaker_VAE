@@ -10,7 +10,7 @@ if __name__ == "__main__":
     DEMOGRAPHIC = "accents"
 
     data_root = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
-    save_dir = "/Users/nmehlman/Desktop/pseudo_speaker_VAE/plots/"
+    save_dir = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/"
     dataset = CVEmbeddingDataset(data_root, split="train")
 
     # Randomly sample N_SAMPLES from the dataset
