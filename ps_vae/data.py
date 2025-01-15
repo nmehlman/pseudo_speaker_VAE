@@ -52,7 +52,7 @@ class CVEmbeddingDataset(Dataset):
     def __len__(self):
         return len(self.embedding_files)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
 
         filename = self.embedding_files[idx]
 
