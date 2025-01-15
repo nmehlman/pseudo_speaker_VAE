@@ -20,10 +20,11 @@ def process_in_batches(dataset, batch_size=1000):
     results = []
     with ThreadPoolExecutor() as executor:
         for i in tqdm.tqdm(range(0, len(dataset), batch_size), desc='Processing batches'):
-            batch = dataset[i:i + batch_size]
+            batch = [dataset[j] for j in range(i, min(i + batch_size, len(dataset)))]
             batch_results = list(executor.map(process_sample, batch))
             results.extend(batch_results)
     return results
+
 
 
 if __name__ == "__main__":
