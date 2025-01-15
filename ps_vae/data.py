@@ -1,90 +1,130 @@
-from ps_vae.data import CVEmbeddingDataset
+import torch
+from torch.utils.data import Dataset
 import os
-import json
-import numpy as np
-import matplotlib.pyplot as plt
-from collections import Counter
-import tqdm
-from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, Union, Callable
+from torch.utils.data import DataLoader, random_split
+from ps_vae.utils import map_cv_gender_to_label, map_cv_age_to_label
+
+METADATA_TRANSFORMS = {
+    "gender": lambda x: map_cv_gender_to_label(x['gender']),
+    "age": lambda x: map_cv_age_to_label(x['age']),
+    "age_and_gender": lambda x: (map_cv_age_to_label(x['age']), map_cv_gender_to_label(x['gender']))
+}
+
+class CVEmbeddingDataset(Dataset):
+    def __init__(
+        self, data_root: str, split: str = "train", metadata_transform: str = None
+    ):
+        
+        # Setup function to parse metadata
+        if metadata_transform is not None:
+            assert metadata_transform in METADATA_TRANSFORMS, f"Invalid metadata transform: {metadata_transform}"
+            self.metadata_transform = METADATA_TRANSFORMS[metadata_transform]
+        else:
+            self.metadata_transform = None
+
+        # Read metadata file
+        metadata_file = os.path.join(data_root, f"{split}.tsv")
+        with open(metadata_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            self.metadata_headers = lines[0].strip().split("\t")
+            self.metadata = [
+                {
+                    name: val
+                    for name, val in zip(
+                        self.metadata_headers, line.strip().split("\t")
+                    )
+                }
+                for line in lines[1:]
+            ]
+
+        # Convert metadata to dict: {filename: info}
+        self.metadata = {
+            info.pop("path").replace(".mp3", ".pth"): info for info in self.metadata
+        }
+
+        # Will only load existing embeddings in directory, not all files in metadata
+        self.embed_dir = os.path.join(data_root, "embeds", split)
+        self.embedding_files = [file for file in os.listdir(self.embed_dir) if file.endswith(".pth")]
+
+    def __len__(self):
+        return len(self.embedding_files)
+
+    def __getitem__(self, idx):
+
+        filename = self.embedding_files[idx]
+        
+        # Load embedding
+        embed_file = os.path.join(self.embed_dir, filename)
+        embed = torch.load(embed_file, weights_only=True)
+
+        # Load metadata
+        metadata = self.metadata[filename]
+
+        if self.metadata_transform is not None:  # Apply transform if provided
+            metadata = self.metadata_transform(metadata)
+
+        return embed.squeeze(), metadata
 
 
-def process_sample(sample):
-    sample_info = sample[1]
-    age = sample_info["age"]
-    gender = sample_info["gender"]
-    accent = sample_info.get('accents', "unknown")
-    return age, gender, accent
+def get_dataloaders(
+    dataset_kwargs: Dict = {},
+    batch_size: int = 16,
+    collate_fn: Union[Callable, None] = None,
+    train_frac: float = 1.0,
+    **dataloader_kwargs,
+) -> Union[DataLoader, Dict]:
 
+    """Generate dataloader(s) for dataset_class with option to split into train/val
 
-def process_in_batches(dataset, batch_size=1000):
-    results = []
-    with ThreadPoolExecutor() as executor:
-        for i in tqdm.tqdm(range(0, len(dataset), batch_size), desc='Processing batches'):
-            batch = dataset[i:i + batch_size]
-            batch_results = list(executor.map(process_sample, batch))
-            results.extend(batch_results)
-    return results
+    Args:
+        dataset_kwargs (Dict): kwargs for dataset construction
+        batch_size (int): batch size
+        collate_fn (Union[Callable, None], optional): Function to use for batch collation. Defaults to None.
+        train_frac (float, optional): fraction of data to use for train split. Defaults to 1.0
+        dataloader_kwargs (Dict, optional): additional kwargs to pass to dataloader constructor
 
+    Returns:
+        loader(s) (Union[ DataLoader, Dict ]): single dataloader if train_frac = 1.0, or dict with train/val loaders
+        if train_frac < 1.0
+    """
 
-if __name__ == "__main__":
-    # Load dataset
-    data_root = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
-    save_dir = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/"
-    split = "train"
-    dataset = CVEmbeddingDataset(data_root, split=split)
+    dset = CVEmbeddingDataset(**dataset_kwargs)
 
-    # Process dataset in batches
-    results = process_in_batches(dataset)
+    if train_frac < 1.0:
 
-    # Extract results
-    ages, genders, accents = zip(*results)
+        dset_size = len(dset)
+        train_size = int(dset_size * train_frac)
+        val_size = dset_size - train_size
 
-    # Get unique values and save to json
-    unique_ages = list(set(ages))
-    unique_genders = list(set(genders))
-    unique_accents = list(set(accents))
+        train_dset, val_dset = random_split(dset, [train_size, val_size])
 
-    info = {
-        "unique_ages": unique_ages,
-        "unique_genders": unique_genders,
-        "unique_accents": unique_accents
-    }
+        train_loader = DataLoader(
+            dataset=train_dset,
+            batch_size=batch_size,
+            collate_fn=collate_fn,
+            **dataloader_kwargs,
+        )
 
-    with open(os.path.join(save_dir, f"dataset_info_{split}.json"), "w") as f:
-        json.dump(info, f, indent=4)
+        val_loader = DataLoader(
+            dataset=val_dset,
+            batch_size=batch_size,
+            collate_fn=collate_fn,
+            **dataloader_kwargs,
+        )
 
-    # Plot age distributions
-    fig = plt.figure(figsize=(12, 4))
+        loaders = {"train": train_loader, "val": val_loader}
 
-    # Age Distribution
-    plt.subplot(1, 3, 1)
-    counts = Counter(ages)
-    categories = list(counts.keys())
-    frequencies = list(counts.values())
-    plt.bar(categories, frequencies)
-    plt.xlabel('Age')
-    plt.ylabel('Frequency')
-    plt.title(f'Age Distribution in {split} split')
+        return loaders
 
-    # Gender Distribution
-    plt.subplot(1, 3, 2)
-    counts = Counter(genders)
-    categories = list(counts.keys())
-    frequencies = list(counts.values())
-    plt.bar(categories, frequencies)
-    plt.xlabel('Gender')
-    plt.ylabel('Frequency')
-    plt.title(f'Gender Distribution in {split} split')
+    else:
 
-    # Accent Distribution
-    plt.subplot(1, 3, 3)
-    counts = Counter(accents)
-    categories = list(counts.keys())
-    frequencies = list(counts.values())
-    plt.bar(categories, frequencies)
-    plt.xlabel('Accent')
-    plt.ylabel('Frequency')
-    plt.title(f'Accent Distribution in {split} split')
+        loader = DataLoader(
+            dataset=dset,
+            batch_size=batch_size,
+            collate_fn=collate_fn,
+            **dataloader_kwargs,
+        )
 
-    plt.tight_layout()
-    plt.savefig(os.path.join(save_dir, f"traits_distribution_{split}_split.png"))
+        return loader
+
