@@ -25,11 +25,11 @@ lightning:
 
 # Training options:
 trainer:
-  max_epochs: 1
+  max_epochs: 100
   val_check_interval: 1.0 # Must be >= 1 for iterable-type dataset
   log_every_n_steps: 10    
   sync_batchnorm: True
-  accelerator: "cpu"
+  accelerator: "gpu"
   devices: "auto"
   deterministic: False
   detect_anomaly: True
