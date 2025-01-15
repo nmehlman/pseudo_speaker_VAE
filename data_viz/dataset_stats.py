@@ -7,8 +7,7 @@ from collections import Counter
 import tqdm
 
 
-def process_sample(sample):
-    sample_info = sample[1]
+def process_sample(sample_info):
     age = sample_info["age"]
     gender = sample_info["gender"]
     accent = sample_info.get('accents', "unknown")
