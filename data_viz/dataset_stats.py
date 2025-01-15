@@ -16,15 +16,13 @@ def process_sample(sample):
     return age, gender, accent
 
 
-def process_in_batches(dataset, batch_size=1000):
+def process_dataset(dataset, max_workers=8):
+    """Process the dataset with limited concurrency to avoid hitting file descriptor limits."""
     results = []
-    with ThreadPoolExecutor() as executor:
-        for i in tqdm.tqdm(range(0, len(dataset), batch_size), desc='Processing batches'):
-            batch = [dataset[j] for j in range(i, min(i + batch_size, len(dataset)))]
-            batch_results = list(executor.map(process_sample, batch))
-            results.extend(batch_results)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for result in tqdm.tqdm(executor.map(process_sample, dataset, chunksize=100), total=len(dataset), desc='Processing samples'):
+            results.append(result)
     return results
-
 
 
 if __name__ == "__main__":
@@ -34,8 +32,8 @@ if __name__ == "__main__":
     split = "train"
     dataset = CVEmbeddingDataset(data_root, split=split)
 
-    # Process dataset in batches
-    results = process_in_batches(dataset)
+    # Process dataset
+    results = process_dataset(dataset)
 
     # Extract results
     ages, genders, accents = zip(*results)
