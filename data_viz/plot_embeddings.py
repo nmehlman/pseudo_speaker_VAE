@@ -42,8 +42,6 @@ def stratified_sampling(dataset, n_samples, stratification_fcn=None, filter_fcn=
 
         return strat_samples
 
-
-
 if __name__ == "__main__":
 
     N_SAMPLES = 1000
