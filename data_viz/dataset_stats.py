@@ -16,12 +16,18 @@ def process_sample(sample):
     return age, gender, accent
 
 
-def process_dataset(dataset, max_workers=8):
-    """Process the dataset with limited concurrency to avoid hitting file descriptor limits."""
+def process_dataset(dataset, batch_size=1000, max_workers=8):
+    """Process the dataset in smaller batches to avoid stalling."""
     results = []
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for result in tqdm.tqdm(executor.map(process_sample, dataset, chunksize=100), total=len(dataset), desc='Processing samples'):
-            results.append(result)
+        for i in tqdm.tqdm(range(0, len(dataset), batch_size), desc='Processing batches'):
+            batch = [dataset[j] for j in range(i, min(i + batch_size, len(dataset)))]
+            future_to_sample = {executor.submit(process_sample, sample): sample for sample in batch}
+
+            for future in tqdm.tqdm(future_to_sample, desc=f'Processing batch {i // batch_size + 1}', leave=False):
+                results.append(future.result())
+
     return results
 
 
