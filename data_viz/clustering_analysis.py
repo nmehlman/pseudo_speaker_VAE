@@ -43,7 +43,7 @@ metadata_mapping = {
 if __name__ == "__main__":
 
     N_SAMPLES = 1000
-    DIM_REDUCTION = "TSNE"
+    DIM_REDUCTION = "MDS"
     CLUSTERING = "KMeans"
     N_DIMS = 2
     N_CLUSTERS = 10
