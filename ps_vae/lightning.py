@@ -39,4 +39,13 @@ class PseudoSpeakerVAE(pl.LightningModule):
         return {"loss": total_loss}
 
     def configure_optimizers(self):
-        return Adam(self.model.parameters(), **self.hparams["optimizer"])
+        optimizer = Adam(self.model.parameters(), **self.hparams["optimizer"])
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, **self.hparams["scheduler"])
+        return {
+            'optimizer': optimizer,
+                'lr_scheduler': {
+                    'scheduler': scheduler,  # The learning rate scheduler instance
+                    'interval': 'epoch',       
+                    'frequency': 1,        
+                }
+            }
