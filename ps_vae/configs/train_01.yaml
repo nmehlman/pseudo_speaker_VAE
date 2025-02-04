@@ -15,6 +15,7 @@ dataloader:
 
 # Model options:
 lightning:
+  kl_loss_weight: 10
   model:
     input_dim: 512 
     latent_dim: 16 # Changed from 64 to 16
