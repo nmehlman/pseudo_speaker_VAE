@@ -30,27 +30,25 @@ def stratified_sampling(dataset, n_samples, stratification_fcn=None, filter_fcn=
         return np.random.choice(valid_samples, n_samples, replace=False)
 
     else:
-        stratification = {i: stratification_fcn(metadata[files[i]]) for i in valid_samples} # Set strat. value for each sample
+        stratification_valid = [stratification_fcn(metadata[files[i]]) for i in valid_samples] # Set strat. value for each sample
         
-        unique_stratifications = list(set(stratification))
+        unique_stratifications = list(set(stratification_valid))
 
         strat_samples = []
         for strat in unique_stratifications:
-            strat_idxs = [i for i in valid_samples if stratification[i] == strat]
-            group_samples = np.random.choice(strat_idxs, n_samples // len(unique_stratifications), replace=False)
-            strat_samples.extend(group_samples)
+            strat_idxs_valid = [i for i in range(len(stratification_valid)) if stratification_valid[i] == strat]
+            group_samples_valid = np.random.choice(strat_idxs_valid, n_samples // len(unique_stratifications), replace=False)
+            strat_samples.extend([valid_samples[i] for i in group_samples_valid])
 
         return strat_samples
-
-
 
 if __name__ == "__main__":
 
     N_SAMPLES = 1000
-    DEMOGRAPHIC = "age"
+    DEMOGRAPHIC = "gender"
     APPLY_AGE_GROUPINGS = True
-    filter_fcn = lambda sample: sample['accents'] == 'United States English' and sample['gender'] == 'male'
-    stratification_fcn = lambda sample: AGE_GROUPINGS[sample['age']]
+    filter_fcn = lambda sample: sample['accents'] == 'United States English' and AGE_GROUPINGS[sample['age']] == 'Old'
+    stratification_fcn = None#lambda sample: AGE_GROUPINGS[sample['age']]
 
     data_root = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
     save_dir = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/"
@@ -87,4 +85,4 @@ if __name__ == "__main__":
     legend_labels = [unique_demos[idx] for idx in range(len(unique_demos))]
     plt.legend(handles, legend_labels, title="Demographics")
 
-    plt.savefig(os.path.join(save_dir,f"raw_embeddings_{DEMOGRAPHIC}_tsne_us_only_male_only_grouped_strat.png"))
+    plt.savefig(os.path.join(save_dir,f"raw_embeddings_{DEMOGRAPHIC}_tsne_us_only_old.png"))
