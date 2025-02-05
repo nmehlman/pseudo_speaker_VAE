@@ -26,18 +26,15 @@ class LatentSpacePCACallback(pl.Callback):
         device = pl_module.device
         
         latent_vectors = []
-        labels = []
 
         with torch.no_grad():
             for i, (batch, target) in enumerate(self.dataloader):
                 if self.num_batches is not None and i >= self.num_batches:
                     break
                 batch = batch.to(device)
-                target = target.to(device)
                 
                 latent_repr = pl_module.get_latent_representation(batch)  # Assumes your model has this method
                 latent_vectors.append(latent_repr.cpu().numpy())
-                labels.append(target.cpu().numpy())
 
         # Convert to NumPy arrays
         latent_vectors = np.vstack(latent_vectors)
@@ -49,7 +46,7 @@ class LatentSpacePCACallback(pl.Callback):
 
         # Plot results
         plt.figure(figsize=(8, 6))
-        scatter = plt.scatter(latent_pca[:, 0], latent_pca[:, 1], c=labels, cmap="viridis", alpha=0.7)
+        scatter = plt.scatter(latent_pca[:, 0], latent_pca[:, 1], cmap="viridis", alpha=0.7)
         plt.colorbar(scatter, label="Class Labels")
         plt.xlabel("PCA Component 1")
         plt.ylabel("PCA Component 2")
