@@ -46,8 +46,7 @@ class LatentSpacePCACallback(pl.Callback):
 
         # Plot results
         plt.figure(figsize=(8, 6))
-        scatter = plt.scatter(latent_pca[:, 0], latent_pca[:, 1], cmap="viridis", alpha=0.7)
-        plt.colorbar(scatter, label="Class Labels")
+        scatter = plt.scatter(latent_pca[:, 0], latent_pca[:, 1], alpha=0.7)
         plt.xlabel("PCA Component 1")
         plt.ylabel("PCA Component 2")
         plt.title(f"Latent Space PCA - Epoch {trainer.current_epoch}")
