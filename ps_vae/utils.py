@@ -3,7 +3,6 @@ import torch
 import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-from torchvision.utils import make_grid
 from io import BytesIO
 import PIL.Image
 import numpy as np
