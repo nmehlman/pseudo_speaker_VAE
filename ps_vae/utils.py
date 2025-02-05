@@ -33,12 +33,11 @@ class LatentSpacePCACallback(pl.Callback):
                     break
                 batch = batch.to(device)
                 
-                _, latent_repr, _ = pl_module(batch)  # Assumes your model has this method
+                _, latent_repr, _ = pl_module(batch)  
                 latent_vectors.append(latent_repr.cpu().numpy())
 
         # Convert to NumPy arrays
         latent_vectors = np.vstack(latent_vectors)
-        labels = np.concatenate(labels)
 
         # Perform PCA
         pca = PCA(n_components=2)
