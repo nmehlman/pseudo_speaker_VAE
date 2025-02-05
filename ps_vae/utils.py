@@ -62,9 +62,8 @@ class LatentSpacePCACallback(pl.Callback):
         buf.seek(0)
         img = PIL.Image.open(buf)
 
-        # Log to TensorBoard (if available)
-        if hasattr(trainer.logger, "experiment"):
-            trainer.logger.experiment.add_image("Latent Space PCA", torch.tensor(np.array(img)), global_step=trainer.current_epoch)
+        # Log to TensorBoard
+        trainer.logger.experiment.add_image("Latent Space PCA", torch.tensor(np.array(img)), global_step=trainer.current_epoch)
 
         plt.close()
 
