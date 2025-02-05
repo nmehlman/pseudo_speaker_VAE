@@ -1,7 +1,7 @@
 """Pytorch Lightning Training Script for PS-VAE"""
 
 import argparse
-from utils import load_yaml_config
+from utils import load_yaml_config, LatentSpacePCACallback
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from pytorch_lightning.strategies.ddp import DDPStrategy
@@ -36,6 +36,10 @@ if __name__ == "__main__":
     dataloaders = get_dataloaders(
         dataset_kwargs=config["dataset"], **config["dataloader"]
     )
+    
+    callbacks = [
+        LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=16)
+    ]
 
     # Create Lightning module
     pl_model = PseudoSpeakerVAE(**config["lightning"])
@@ -46,6 +50,7 @@ if __name__ == "__main__":
     # Make trainer
     trainer = Trainer(
         logger=logger,
+        callbacks=callbacks,
         strategy=DDPStrategy(find_unused_parameters=False),
         **config["trainer"]
     )
