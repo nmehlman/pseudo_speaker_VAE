@@ -34,7 +34,7 @@ trainer:
   accelerator: "gpu"
   devices: "auto"
   deterministic: False
-  detect_anomaly: True
+  detect_anomaly: False
   accumulate_grad_batches: 1
 
 # Tensorboard options:
