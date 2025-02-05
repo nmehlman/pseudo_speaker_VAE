@@ -33,7 +33,7 @@ class LatentSpacePCACallback(pl.Callback):
                     break
                 batch = batch.to(device)
                 
-                latent_repr = pl_module.get_latent_representation(batch)  # Assumes your model has this method
+                _, latent_repr, _ = pl_module(batch)  # Assumes your model has this method
                 latent_vectors.append(latent_repr.cpu().numpy())
 
         # Convert to NumPy arrays
