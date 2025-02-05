@@ -38,7 +38,7 @@ if __name__ == "__main__":
     )
     
     callbacks = [
-        LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=16)
+        LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=4)
     ]
 
     # Create Lightning module
