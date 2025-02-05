@@ -6,6 +6,7 @@ from sklearn.decomposition import PCA
 from io import BytesIO
 import PIL.Image
 import numpy as np
+import torchvision.transforms as transforms
 
 class LatentSpacePCACallback(pl.Callback):
     def __init__(self, dataloader, num_batches=None):
@@ -58,8 +59,10 @@ class LatentSpacePCACallback(pl.Callback):
         buf.seek(0)
         img = PIL.Image.open(buf)
 
+        img_tensor = transforms.ToTensor()(img)
+
         # Log to TensorBoard
-        trainer.logger.experiment.add_image("Latent Space PCA", torch.tensor(np.array(img)), global_step=trainer.current_epoch)
+        trainer.logger.experiment.add_image("Latent Space PCA", img_tensor, global_step=trainer.current_epoch)
 
         plt.close()
 
