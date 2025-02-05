@@ -37,6 +37,25 @@ class PseudoSpeakerVAE(pl.LightningModule):
         self.log("train_kl_loss", kl_loss)
 
         return {"loss": total_loss}
+    
+    def validation_step(self, batch: tuple, batch_idx: int) -> float:
+
+        x, _ = batch
+        x_hat, mu, log_sigma = self(x)
+
+        mse_loss = nn.functional.mse_loss(x_hat, x, reduction="mean")
+        kl_loss = -0.5 * torch.mean(
+            torch.sum(1 + log_sigma - mu.pow(2) - log_sigma.exp(), dim=-1)
+        )
+
+        total_loss = mse_loss + self.kl_loss_weight * kl_loss
+        
+        # Logging
+        self.log("val_loss", total_loss)
+        self.log("val_mse_loss", mse_loss)
+        self.log("val_kl_loss", kl_loss)
+
+        return {"loss": total_loss}
 
     def configure_optimizers(self):
         optimizer = Adam(self.model.parameters(), **self.hparams["optimizer"])
