@@ -9,8 +9,8 @@ dataset:
 
 # Dataloader options:
 dataloader:
-  batch_size: 128
-  num_workers: 1
+  batch_size: 64
+  num_workers: 4
   train_frac: 0.8
 
 # Model options:
@@ -34,6 +34,8 @@ trainer:
   accelerator: "gpu"
   devices: "auto"
   deterministic: False
+  limit_train_batches: 20
+  limit_val_batches: 20
   detect_anomaly: False
   accumulate_grad_batches: 1
 
