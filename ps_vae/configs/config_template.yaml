@@ -24,6 +24,7 @@ lightning:
   scheduler:
     T_max: 50
 
+pca_batches: 0
 
 # Training options:
 trainer:

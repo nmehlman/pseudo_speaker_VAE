@@ -21,7 +21,7 @@ class LatentSpacePCACallback(pl.Callback):
         self.dataloader = dataloader
         self.num_batches = num_batches
 
-    def on_train_epoch_end(self, trainer, pl_module):
+    def on_validation_epoch_start(self, trainer, pl_module):
         """Perform PCA on the latent representations and plot after each epoch."""
         pl_module.eval()
         device = pl_module.device
