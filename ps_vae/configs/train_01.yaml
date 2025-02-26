@@ -9,9 +9,9 @@ dataset:
 
 # Dataloader options:
 dataloader:
-  batch_size: 32
+  batch_size: 64
   num_workers: 4
-  train_frac: 0.8
+  train_frac: 0.9
 
 # Model options:
 lightning:
@@ -20,7 +20,7 @@ lightning:
     input_dim: 512 
     latent_dim: 16 
   optimizer:
-    lr: 0.0005
+    lr: 0.0001
     weight_decay: 0.000
   scheduler:
     T_max: 100
@@ -30,7 +30,8 @@ pca_batches: 0
 # Training options:
 trainer:
   max_epochs: 100
-  val_check_interval: 1.0 # Must be >= 1 for iterable-type dataset
+  num_nodes: 2
+  val_check_interval: 0.25 # Must be >= 1 for iterable-type dataset
   log_every_n_steps: 10    
   sync_batchnorm: True
   accelerator: "gpu"
