@@ -30,7 +30,9 @@ pca_batches: 16
 # Training options:
 trainer:
   max_epochs: 10
-  val_check_interval: 0.01 # Must be >= 1 for iterable-type dataset
+  val_check_interval: 0.5 # Must be >= 1 for iterable-type dataset
+  limit_train_batches: 20
+  limit_val_batches: 20
   log_every_n_steps: 10    
   sync_batchnorm: True
   accelerator: "gpu"
