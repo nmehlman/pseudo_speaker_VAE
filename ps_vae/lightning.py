@@ -51,9 +51,9 @@ class PseudoSpeakerVAE(pl.LightningModule):
         total_loss = mse_loss + self.kl_loss_weight * kl_loss
         
         # Logging
-        self.log("val_loss", total_loss)
-        self.log("val_mse_loss", mse_loss)
-        self.log("val_kl_loss", kl_loss)
+        self.log("val_loss", total_loss, sync_dist=True, batch_size=x.size(0))
+        self.log("val_mse_loss", mse_loss, sync_dist=True, batch_size=x.size(0))
+        self.log("val_kl_loss", kl_loss, sync_dist=True, batch_size=x.size(0))
 
         return {"loss": total_loss}
 
