@@ -11,6 +11,7 @@ from ps_vae.lightning import PseudoSpeakerVAE
 import torch
 from pytorch_lightning.loggers import TensorBoardLogger
 import os
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 torch.set_warn_always(False)
 torch.set_float32_matmul_precision('medium')
@@ -38,18 +39,31 @@ if __name__ == "__main__":
         dataset_kwargs=config["dataset"], **config["dataloader"]
     )
     
+    
+    # Create logger
+    logger = TensorBoardLogger(**config["tensorboard"])
+    
+    # Setup callbacks
+    callbacks = []
+
     if config["pca_batches"]:
-        callbacks = [
+        callbacks.append(
             LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=config["pca_batches"])
-        ]
-    else:
-        callbacks = []
+        )
+
+    # Add checkpoint callback to save the best model based on validation loss
+    checkpoint_callback = ModelCheckpoint(
+        monitor="val_loss",
+        dirpath=os.path.join(logger.log_dir, "checkpoints"),
+        filename="best-{epoch:02d}-{val_loss:.2f}",
+        save_top_k=1,
+        save_last=True,
+        mode="min"
+    )
+    callbacks.append(checkpoint_callback)
 
     # Create Lightning module
     pl_model = PseudoSpeakerVAE(**config["lightning"])
-
-    # Create logger
-    logger = TensorBoardLogger(**config["tensorboard"])
 
     # Make trainer
     trainer = Trainer(
