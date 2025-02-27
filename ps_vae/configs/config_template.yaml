@@ -1,6 +1,6 @@
 random_seed: 42
 ckpt_path: null
-gpus: "0,1"
+gpus: "0"
 
 # Dataset options:
 dataset:
