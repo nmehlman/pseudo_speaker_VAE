@@ -1,6 +1,6 @@
 random_seed: 42
 ckpt_path: null
-gpus: "0"
+gpus: "0,1"
 
 # Dataset options:
 dataset:
@@ -35,15 +35,13 @@ trainer:
   accelerator: "gpu"
   devices: "auto"
   deterministic: False
-  limit_train_batches: 20
-  limit_val_batches: 20
   detect_anomaly: False
   accumulate_grad_batches: 1
 
 # Tensorboard options:
 tensorboard:
   save_dir: "/home1/nmehlman/arts/pseudo_speakers/logs"
-  name: "debug"
+  name: null
   version: null     # Automatic versioning if set to null (recommended)
 
 
