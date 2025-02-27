@@ -13,6 +13,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 import os
 
 torch.set_warn_always(False)
+torch.set_float32_matmul_precision('medium')
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="PyTorch Lightning Training Script")
