@@ -37,9 +37,12 @@ if __name__ == "__main__":
         dataset_kwargs=config["dataset"], **config["dataloader"]
     )
     
-    callbacks = [
-        LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=16)
-    ]
+    if config["pca_batches"]:
+        callbacks = [
+            LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=config["pca_batches"])
+        ]
+    else:
+        callbacks = []
 
     # Create Lightning module
     pl_model = PseudoSpeakerVAE(**config["lightning"])

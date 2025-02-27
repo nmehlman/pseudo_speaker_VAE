@@ -6,6 +6,7 @@ from sklearn.decomposition import PCA
 from io import BytesIO
 import PIL.Image
 import numpy as np
+import torchvision.transforms as transforms
 
 class LatentSpacePCACallback(pl.Callback):
     def __init__(self, dataloader, num_batches=None):
@@ -20,28 +21,24 @@ class LatentSpacePCACallback(pl.Callback):
         self.dataloader = dataloader
         self.num_batches = num_batches
 
-    def on_epoch_end(self, trainer, pl_module):
+    def on_validation_epoch_start(self, trainer, pl_module):
         """Perform PCA on the latent representations and plot after each epoch."""
         pl_module.eval()
         device = pl_module.device
         
         latent_vectors = []
-        labels = []
 
         with torch.no_grad():
             for i, (batch, target) in enumerate(self.dataloader):
                 if self.num_batches is not None and i >= self.num_batches:
                     break
                 batch = batch.to(device)
-                target = target.to(device)
                 
-                latent_repr = pl_module.get_latent_representation(batch)  # Assumes your model has this method
+                _, latent_repr, _ = pl_module(batch)  
                 latent_vectors.append(latent_repr.cpu().numpy())
-                labels.append(target.cpu().numpy())
 
         # Convert to NumPy arrays
         latent_vectors = np.vstack(latent_vectors)
-        labels = np.concatenate(labels)
 
         # Perform PCA
         pca = PCA(n_components=2)
@@ -49,8 +46,7 @@ class LatentSpacePCACallback(pl.Callback):
 
         # Plot results
         plt.figure(figsize=(8, 6))
-        scatter = plt.scatter(latent_pca[:, 0], latent_pca[:, 1], c=labels, cmap="viridis", alpha=0.7)
-        plt.colorbar(scatter, label="Class Labels")
+        scatter = plt.scatter(latent_pca[:, 0], latent_pca[:, 1], alpha=0.7)
         plt.xlabel("PCA Component 1")
         plt.ylabel("PCA Component 2")
         plt.title(f"Latent Space PCA - Epoch {trainer.current_epoch}")
@@ -62,9 +58,10 @@ class LatentSpacePCACallback(pl.Callback):
         buf.seek(0)
         img = PIL.Image.open(buf)
 
-        # Log to TensorBoard (if available)
-        if hasattr(trainer.logger, "experiment"):
-            trainer.logger.experiment.add_image("Latent Space PCA", torch.tensor(np.array(img)), global_step=trainer.current_epoch)
+        img_tensor = transforms.ToTensor()(img)
+
+        # Log to TensorBoard
+        trainer.logger.experiment.add_image("Latent Space PCA", img_tensor, global_step=trainer.current_epoch)
 
         plt.close()
 
