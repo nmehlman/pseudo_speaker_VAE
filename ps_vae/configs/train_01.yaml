@@ -9,13 +9,13 @@ dataset:
 
 # Dataloader options:
 dataloader:
-  batch_size: 64
-  num_workers: 4
+  batch_size: 2048
+  num_workers: 16
   train_frac: 0.9
 
 # Model options:
 lightning:
-  kl_loss_weight: 2
+  kl_loss_weight: 4
   model:
     input_dim: 512 
     latent_dim: 16 
