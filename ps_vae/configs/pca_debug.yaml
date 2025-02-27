@@ -1,6 +1,6 @@
 random_seed: 42
 ckpt_path: null
-gpus: "0,1"
+gpus: "0"
 
 # Dataset options:
 dataset:
@@ -9,9 +9,9 @@ dataset:
 
 # Dataloader options:
 dataloader:
-  batch_size: 64
+  batch_size: 32
   num_workers: 4
-  train_frac: 0.9
+  train_frac: 0.8
 
 # Model options:
 lightning:
@@ -20,18 +20,19 @@ lightning:
     input_dim: 512 
     latent_dim: 16 
   optimizer:
-    lr: 0.0001
+    lr: 0.0005
     weight_decay: 0.000
   scheduler:
-    T_max: 100
+    T_max: 10
 
-pca_batches: 0
+pca_batches: 16
 
 # Training options:
 trainer:
-  max_epochs: 100
-  num_nodes: 2
-  val_check_interval: 0.25 # Must be >= 1 for iterable-type dataset
+  max_epochs: 10
+  val_check_interval: 0.5 # Must be >= 1 for iterable-type dataset
+  limit_train_batches: 20
+  limit_val_batches: 20
   log_every_n_steps: 10    
   sync_batchnorm: True
   accelerator: "gpu"
@@ -43,7 +44,7 @@ trainer:
 # Tensorboard options:
 tensorboard:
   save_dir: "/home1/nmehlman/arts/pseudo_speakers/logs"
-  name: "train_01"
+  name: "pca_debug"
   version: null     # Automatic versioning if set to null (recommended)
 
 
