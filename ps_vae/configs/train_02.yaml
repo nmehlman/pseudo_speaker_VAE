@@ -43,7 +43,7 @@ trainer:
 # Tensorboard options:
 tensorboard:
   save_dir: "/home1/nmehlman/arts/pseudo_speakers/logs"
-  name: "train_01"
+  name: "train_02"
   version: null     # Automatic versioning if set to null (recommended)
 
 
