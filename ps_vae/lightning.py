@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 import torch.nn as nn
 from ps_vae.model import VAEModel
+from ps_vae.classifier import Classifier
 import torch
 from torch.optim import Adam
 
@@ -12,8 +13,11 @@ class PseudoSpeakerVAE(pl.LightningModule):
         self.save_hyperparameters()
 
         self.model = VAEModel(**hparams["model"])
-
+        if 'classifier' in hparams:
+            self.classifier = Classifier(**hparams["classifier"])
+        
         self.kl_loss_weight = hparams.get("kl_loss_weight", 1.0)
+        self.classifier_loss_weight = hparams.get("classifier_loss_weight", 1.0)
 
     def forward(self, x):
         x_hat, mu, sigma = self.model(x)
@@ -21,39 +25,55 @@ class PseudoSpeakerVAE(pl.LightningModule):
 
     def training_step(self, batch: tuple, batch_idx: int) -> float:
 
-        x, _ = batch
+        x, y = batch
         x_hat, mu, log_sigma = self(x)
+
+        y_hat = self.classifier(mu)
+        classifier_loss = nn.functional.cross_entropy(y_hat, y)
 
         mse_loss = nn.functional.mse_loss(x_hat, x, reduction="mean")
         kl_loss = -0.5 * torch.mean(
             torch.sum(1 + log_sigma - mu.pow(2) - log_sigma.exp(), dim=-1)
         )
 
-        total_loss = mse_loss + self.kl_loss_weight * kl_loss
+        total_loss = (
+            mse_loss + 
+            self.kl_loss_weight * kl_loss + 
+            self.classifier_loss_weight * classifier_loss
+        )
         
         # Logging
         self.log("train_loss", total_loss)
         self.log("train_mse_loss", mse_loss)
         self.log("train_kl_loss", kl_loss)
+        self.log("train_classifier_loss", classifier_loss)
 
         return {"loss": total_loss}
     
     def validation_step(self, batch: tuple, batch_idx: int) -> float:
 
-        x, _ = batch
+        x, y = batch
         x_hat, mu, log_sigma = self(x)
+
+        y_hat = self.classifier(mu)
+        classifier_loss = nn.functional.cross_entropy(y_hat, y)
 
         mse_loss = nn.functional.mse_loss(x_hat, x, reduction="mean")
         kl_loss = -0.5 * torch.mean(
             torch.sum(1 + log_sigma - mu.pow(2) - log_sigma.exp(), dim=-1)
         )
 
-        total_loss = mse_loss + self.kl_loss_weight * kl_loss
+        total_loss = (
+            mse_loss + 
+            self.kl_loss_weight * kl_loss + 
+            self.classifier_loss_weight * classifier_loss
+        )
         
         # Logging
         self.log("val_loss", total_loss, sync_dist=True, batch_size=x.size(0))
         self.log("val_mse_loss", mse_loss, sync_dist=True, batch_size=x.size(0))
         self.log("val_kl_loss", kl_loss, sync_dist=True, batch_size=x.size(0))
+        self.log("val_classifier_loss", classifier_loss, sync_dist=True, batch_size=x.size(0))
 
         return {"loss": total_loss}
 
