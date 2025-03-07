@@ -56,7 +56,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
         )
 
         total_loss = (
-            mse_loss + 
+            mse_loss/10 + # Roughly normalize the mse loss
             self.kl_loss_weight * kl_loss + 
             self.classifier_loss_weight * classifier_loss
         )
@@ -78,7 +78,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
             classifier_loss = nn.functional.cross_entropy(y_hat, y)
             classifier_acc = self.accuracy(y_hat, y)
             self.log("train_classifier_acc", classifier_acc)
-            self.log("val_classifier_loss", classifier_loss, sync_dist=True, batch_size=x.size(0))
+            self.log("train_classifier_loss", classifier_loss, sync_dist=True)
         else:
             classifier_loss = 0
 
@@ -88,7 +88,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
         )
 
         total_loss = (
-            mse_loss + 
+            mse_loss/10 + # Roughly normalize the mse loss 
             self.kl_loss_weight * kl_loss + 
             self.classifier_loss_weight * classifier_loss
         )
