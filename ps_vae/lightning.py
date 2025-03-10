@@ -25,7 +25,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
 
         if 'classifier' in hparams:
             self.classifier = Classifier(**hparams["classifier"])
-            self.accuracy = Accuracy()
+            self.accuracy = Accuracy(task="multiclass", num_classes=hparams["classifier"]["num_classes"])
         else:
             self.classifier = None
         
@@ -45,7 +45,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
             y_hat = self.classifier(mu)
             classifier_loss = nn.functional.cross_entropy(y_hat, y)
             classifier_acc = self.accuracy(y_hat, y)
-            self.log("train_classifier_acc", classifier_acc)
+            self.log("train_classifier_acc", classifier_acc, sync_dist=True)
             self.log("train_classifier_loss", classifier_loss)
         else:
             classifier_loss = 0
@@ -77,8 +77,8 @@ class PseudoSpeakerVAE(pl.LightningModule):
             y_hat = self.classifier(mu)
             classifier_loss = nn.functional.cross_entropy(y_hat, y)
             classifier_acc = self.accuracy(y_hat, y)
-            self.log("train_classifier_acc", classifier_acc)
-            self.log("train_classifier_loss", classifier_loss, sync_dist=True)
+            self.log("val_classifier_acc", classifier_acc, sync_dist=True)
+            self.log("val_classifier_loss", classifier_loss, sync_dist=True)
         else:
             classifier_loss = 0
 
@@ -106,7 +106,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
         self.model.load_state_dict(vae_state_dict)
 
     def configure_optimizers(self):
-        optimizer = Adam(self.model.parameters(), **self.hparams["optimizer"])
+        optimizer = Adam(self.parameters(), **self.hparams["optimizer"])
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, **self.hparams["scheduler"])
         return {
             'optimizer': optimizer,

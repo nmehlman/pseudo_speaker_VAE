@@ -38,7 +38,7 @@ if __name__ == "__main__":
         dataset_kwargs=config["dataset"], **config["dataloader"]
     )
     
-    if config["pca_batches"]:
+    if config.get("pca_batches", None):
         callbacks = [
             LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=config["pca_batches"])
         ]
