@@ -5,7 +5,8 @@ from utils import load_yaml_config, LatentSpacePCACallback
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from pytorch_lightning.strategies.ddp import DDPStrategy
-from ps_vae.data import get_dataloaders
+from ps_vae.data.cv import get_cv_dataloaders
+from ps_vae.data.vctk import get_vctk_dataloaders
 from ps_vae.lightning import PseudoSpeakerVAE
 
 import torch
@@ -18,7 +19,7 @@ torch.set_float32_matmul_precision('medium')
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="PyTorch Lightning Training Script")
 parser.add_argument(
-    "--config", type=str, required=True, help="Path to the YAML configuration file"
+    "config", type=str, help="Path to the YAML configuration file"
 )
 args = parser.parse_args()
 
@@ -34,9 +35,17 @@ if __name__ == "__main__":
         pl.seed_everything(config["random_seed"], workers=True)
 
     # Setup dataloaders
-    dataloaders = get_dataloaders(
-        dataset_kwargs=config["dataset"], **config["dataloader"]
-    )
+    dataset_name = config["dataset"].pop("name", "cv")
+    if dataset_name == "cv":
+        dataloaders = get_cv_dataloaders(
+            dataset_kwargs=config["dataset"], **config["dataloader"]
+        )
+    elif dataset_name == "vctk":
+        dataloaders = get_vctk_dataloaders(
+            dataset_kwargs=config["dataset"], **config["dataloader"]
+        )
+    else:
+        raise ValueError(f"Unknown dataset {dataset_name}")
     
     if config.get("pca_batches", None):
         callbacks = [
@@ -65,3 +74,5 @@ if __name__ == "__main__":
         val_dataloaders=dataloaders["val"],
         ckpt_path=config["ckpt_path"],
     )
+
+    

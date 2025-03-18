@@ -73,7 +73,7 @@ class CVEmbeddingDataset(Dataset):
             return embed.squeeze(), metadata
 
 
-def get_dataloaders(
+def get_cv_dataloaders(
     dataset_kwargs: Dict = {},
     batch_size: int = 16,
     collate_fn: Union[Callable, None] = None,

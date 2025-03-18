@@ -64,9 +64,9 @@ if __name__ == "__main__":
     N_SAMPLES = 1000
     DEMOGRAPHIC = "gender"
     APPLY_AGE_GROUPINGS = True
-    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/train_02/version_0/checkpoints/epoch=199-step=14997.ckpt'
+    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/train_03_with_gender_classifier/version_0/checkpoints/epoch=165-step=12447.ckpt'
     DATA_ROOT = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
-    SAVE_NAME = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/vae_latent_gender.png"
+    SAVE_AS = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/vae_latent_gender+classifier.png"
     USE_TSNE = False  # Set to True to use TSNE, False to use PCA
     
     filter_fcn = lambda sample: sample['accents'] == 'United States English'
@@ -122,4 +122,4 @@ if __name__ == "__main__":
     legend_labels = [unique_demos[idx] for idx in range(len(unique_demos))]
     plt.legend(handles, legend_labels, title="Demographics")
 
-    plt.savefig(SAVE_NAME)
+    plt.savefig(SAVE_AS)
