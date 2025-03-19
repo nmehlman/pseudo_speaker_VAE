@@ -54,6 +54,9 @@ class VAEModel(nn.Module):
         x_hat = self.decoder(z)
 
         return x_hat, mu, log_sigma
+    
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        return self.decoder(z)
 
 
 if __name__ == "__main__":
