@@ -32,9 +32,12 @@ class PseudoSpeakerVAE(pl.LightningModule):
         self.kl_loss_weight = hparams.get("kl_loss_weight", 1.0)
         self.classifier_loss_weight = hparams.get("classifier_loss_weight", 1.0)
 
-    def forward(self, x):
-        x_hat, mu, sigma = self.model(x)
-        return x_hat, mu, sigma
+    def forward(self, x: torch.Tensor) -> tuple:
+        x_hat, mu, log_sigma = self.model(x)
+        return x_hat, mu, log_sigma
+    
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        return self.model.decode(z)
 
     def training_step(self, batch: tuple, batch_idx: int) -> float:
 

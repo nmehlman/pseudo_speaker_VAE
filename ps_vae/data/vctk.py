@@ -4,7 +4,7 @@ import pickle
 from torch.utils.data import Dataset, DataLoader, random_split
 from typing import Dict, Union, Callable
 
-class VCTKDataset(Dataset):
+class VCTKEmbeddingDataset(Dataset):
     def __init__(self, data_root: str, split: str = "train"):
         """
         Initialize the VCTK dataset.
@@ -61,7 +61,7 @@ def get_vctk_dataloaders(
     Returns:
         Union[DataLoader, Dict]: A single DataLoader if train_frac == 1.0, or a dictionary with "train" and "val" loaders.
     """
-    dataset = VCTKDataset(**dataset_kwargs)
+    dataset = VCTKEmbeddingDataset(**dataset_kwargs)
     
     if train_frac < 1.0:
         dataset_size = len(dataset)
