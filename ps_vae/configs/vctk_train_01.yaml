@@ -18,10 +18,10 @@ dataloader:
 lightning:
   kl_loss_weight: 4
   use_cos_loss: true
-  normalize: true
   model:
     input_dim: 256 
     latent_dim: 16
+    normalize_decoder: true
   optimizer:
     lr: 0.0002
     weight_decay: 0.000
