@@ -23,7 +23,7 @@ def run_embedding_conditioned_vc(
         source_audio = torchaudio.transforms.Resample(fs, FREE_VC_INPUT_SR)(source_audio)
     
     # Run conversion
-    converted_audio = free_vc_model.voice_conversion_embed(source_audio.squeeze(), speaker_embedding/speaker_embedding.norm()) # DEBUG
+    converted_audio = free_vc_model.voice_conversion_embed(source_audio.squeeze(), speaker_embedding) # DEBUG
     
     return converted_audio.squeeze(0)
 
@@ -32,9 +32,9 @@ if __name__ == "__main__":
     import tqdm
     
     source_audio_path = "/home1/nmehlman/nick_codebase/misc/test_audio.wav"
-    embedding_dir = "/home1/nmehlman/arts/pseudo_speakers/generated_embeddings"
-    save_dir = "/home1/nmehlman/arts/pseudo_speakers/audio_samples"
-    vc_ckpt_dir: str = "/home1/nmehlman/.local/share/tts/voice_conversion_models--multilingual--vctk--freevc24/"
+    embedding_dir = "/project/shrikann_35/nmehlman/psg_data/vctk_sample"
+    save_dir = "/home1/nmehlman/arts/pseudo_speakers/audio_samples/real_embeds"
+    vc_ckpt_dir = "/home1/nmehlman/.local/share/tts/voice_conversion_models--multilingual--vctk--freevc24/"
 
     # Load the FreeVC model
     config = load_config(os.path.join(vc_ckpt_dir, "config.json"))
