@@ -32,27 +32,21 @@ class PseudoSpeakerVAE(pl.LightningModule):
         self.kl_loss_weight = hparams.get("kl_loss_weight", 1.0)
         self.classifier_loss_weight = hparams.get("classifier_loss_weight", 1.0)
         self.use_cos_loss = hparams.get("use_cos_loss", False)
-        self.normalize = hparams.get("normalize", False)
 
     def forward(self, x: torch.Tensor) -> tuple:
         x_hat, mu, log_sigma = self.model(x)
         return x_hat, mu, log_sigma
     
     def decode(self, z: torch.Tensor) -> torch.Tensor:
-        return self.model.decode(z)
+        x_hat = self.model.decode(z)
+        return x_hat
 
     def training_step(self, batch: tuple, batch_idx: int) -> float:
 
         x, y = batch
         
-        if self.normalize:
-            x = nn.functional.normalize(x, p=2, dim=1)
-        
         x_hat, mu, log_sigma = self(x)
         
-        if self.normalize:
-            x_hat = nn.functional.normalize(x_hat, p=2, dim=1)
-
         if self.classifier:
             y_hat = self.classifier(mu)
             classifier_loss = nn.functional.cross_entropy(y_hat, y)
@@ -88,14 +82,8 @@ class PseudoSpeakerVAE(pl.LightningModule):
 
         x, y = batch
         
-        if self.normalize:
-            x = nn.functional.normalize(x, p=2, dim=1)
-        
         x_hat, mu, log_sigma = self(x)
         
-        if self.normalize:
-            x_hat = nn.functional.normalize(x_hat, p=2, dim=1)
-
         if self.classifier:
             y_hat = self.classifier(mu)
             classifier_loss = nn.functional.cross_entropy(y_hat, y)
