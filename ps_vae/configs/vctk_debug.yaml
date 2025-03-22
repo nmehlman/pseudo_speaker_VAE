@@ -16,6 +16,8 @@ dataloader:
 
 # Model options:
 lightning:
+  kl_loss_weight: 4
+  use_cos_loss: true
   model:
     input_dim: 256 
     latent_dim: 64
@@ -35,7 +37,7 @@ trainer:
   limit_val_batches: 8
   log_every_n_steps: 10    
   sync_batchnorm: True
-  accelerator: "gpu"
+  accelerator: "cpu"
   devices: "auto"
   deterministic: False
   detect_anomaly: False

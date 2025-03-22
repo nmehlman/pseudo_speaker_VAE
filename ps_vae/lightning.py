@@ -31,6 +31,8 @@ class PseudoSpeakerVAE(pl.LightningModule):
         
         self.kl_loss_weight = hparams.get("kl_loss_weight", 1.0)
         self.classifier_loss_weight = hparams.get("classifier_loss_weight", 1.0)
+        self.use_cos_loss = hparams.get("use_cos_loss", False)
+        self.normalize = hparams.get("normalize", False)
 
     def forward(self, x: torch.Tensor) -> tuple:
         x_hat, mu, log_sigma = self.model(x)
@@ -42,7 +44,14 @@ class PseudoSpeakerVAE(pl.LightningModule):
     def training_step(self, batch: tuple, batch_idx: int) -> float:
 
         x, y = batch
+        
+        if self.normalize:
+            x = nn.functional.normalize(x, p=2, dim=1)
+        
         x_hat, mu, log_sigma = self(x)
+        
+        if self.normalize:
+            x_hat = nn.functional.normalize(x_hat, p=2, dim=1)
 
         if self.classifier:
             y_hat = self.classifier(mu)
@@ -53,20 +62,24 @@ class PseudoSpeakerVAE(pl.LightningModule):
         else:
             classifier_loss = 0
 
-        mse_loss = nn.functional.mse_loss(x_hat, x, reduction="mean")
+        if self.use_cos_loss:
+            recon_loss = nn.functional.cosine_embedding_loss(x_hat, x, torch.ones(x.size(0)).to(x.device))
+        else:
+            recon_loss = nn.functional.mse_loss(x_hat, x, reduction="mean")/10 # Roughly normalize the mse loss
+        
         kl_loss = -0.5 * torch.mean(
             torch.sum(1 + log_sigma - mu.pow(2) - log_sigma.exp(), dim=-1)
         )
 
         total_loss = (
-            mse_loss/10 + # Roughly normalize the mse loss
+            recon_loss +
             self.kl_loss_weight * kl_loss + 
             self.classifier_loss_weight * classifier_loss
         )
         
         # Logging
         self.log("train_loss", total_loss)
-        self.log("train_mse_loss", mse_loss)
+        self.log("train_recon_loss", recon_loss)
         self.log("train_kl_loss", kl_loss)
 
         return {"loss": total_loss}
@@ -74,7 +87,14 @@ class PseudoSpeakerVAE(pl.LightningModule):
     def validation_step(self, batch: tuple, batch_idx: int) -> float:
 
         x, y = batch
+        
+        if self.normalize:
+            x = nn.functional.normalize(x, p=2, dim=1)
+        
         x_hat, mu, log_sigma = self(x)
+        
+        if self.normalize:
+            x_hat = nn.functional.normalize(x_hat, p=2, dim=1)
 
         if self.classifier:
             y_hat = self.classifier(mu)
@@ -85,21 +105,25 @@ class PseudoSpeakerVAE(pl.LightningModule):
         else:
             classifier_loss = 0
 
-        mse_loss = nn.functional.mse_loss(x_hat, x, reduction="mean")
+        if self.use_cos_loss:
+            recon_loss = nn.functional.cosine_embedding_loss(x_hat, x, torch.ones(x.size(0)).to(x.device))
+        else:
+            recon_loss = nn.functional.mse_loss(x_hat, x, reduction="mean")/10 # Roughly normalize the mse loss
+        
         kl_loss = -0.5 * torch.mean(
             torch.sum(1 + log_sigma - mu.pow(2) - log_sigma.exp(), dim=-1)
         )
 
         total_loss = (
-            mse_loss/10 + # Roughly normalize the mse loss 
+            recon_loss +
             self.kl_loss_weight * kl_loss + 
             self.classifier_loss_weight * classifier_loss
         )
         
         # Logging
-        self.log("val_loss", total_loss, sync_dist=True, batch_size=x.size(0))
-        self.log("val_mse_loss", mse_loss, sync_dist=True, batch_size=x.size(0))
-        self.log("val_kl_loss", kl_loss, sync_dist=True, batch_size=x.size(0))
+        self.log("val_loss", total_loss, batch_size=x.size(0))
+        self.log("val_recon_loss", recon_loss, batch_size=x.size(0))
+        self.log("val_kl_loss", kl_loss, batch_size=x.size(0))
 
         return {"loss": total_loss}
 
