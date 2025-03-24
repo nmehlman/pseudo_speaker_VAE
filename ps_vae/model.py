@@ -66,6 +66,7 @@ class VAEModel(nn.Module):
         x_hat = self.decoder(z)
         if self.normalize_decoder:
             x_hat = F.normalize(x_hat, p=2, dim=1)
+        return x_hat
 
 
 if __name__ == "__main__":

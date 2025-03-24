@@ -24,7 +24,7 @@ def unconditional_synthesis(vae_model: PseudoSpeakerVAE, num_samples: int) -> Te
 
 if __name__ == "__main__":
     
-    VAE_CKPT_PATH = "/project/shrikann_35/nmehlman/logs/ps_vae/vctk_train_01/version_0/checkpoints/epoch=299-step=3000.ckpt"
+    VAE_CKPT_PATH = "/project/shrikann_35/nmehlman/logs/ps_vae/vctk_train_01/version_1/checkpoints/epoch=499-step=5000.ckpt"
     N_SAMPLES = 16
     SAVE_DIR = "/home1/nmehlman/arts/pseudo_speakers/generated_embeddings"
     
