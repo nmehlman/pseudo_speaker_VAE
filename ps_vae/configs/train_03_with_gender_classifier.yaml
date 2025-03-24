@@ -4,33 +4,40 @@ gpus: "0,1"
 
 # Dataset options:
 dataset:
-  name: "cv"
+  metadata_transform: "gender"
   data_root: "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
   split: "train"
 
 # Dataloader options:
 dataloader:
-  batch_size: 64
-  num_workers: 4
-  train_frac: 0.8
+  batch_size: 2048
+  num_workers: 16
+  train_frac: 0.9
 
 # Model options:
 lightning:
+  kl_loss_weight: 4
+  classifier_loss_weight: 1
   model:
     input_dim: 512 
-    latent_dim: 64
+    latent_dim: 16 
+  classifier:
+    input_dim: 16
+    num_classes: 3
+    num_layers: 1
   optimizer:
-    lr: 0.001
+    lr: 0.0002
     weight_decay: 0.000
   scheduler:
-    T_max: 50
+    T_max: 300
 
-pca_batches: 0
+pca_batches: 2
 
 # Training options:
 trainer:
-  max_epochs: 50
-  val_check_interval: 1.0 # Must be >= 1 for iterable-type dataset
+  max_epochs: 300
+  num_nodes: 2
+  val_check_interval: 0.25 
   log_every_n_steps: 10    
   sync_batchnorm: True
   accelerator: "gpu"
@@ -41,8 +48,7 @@ trainer:
 
 # Tensorboard options:
 tensorboard:
-  save_dir: "/home1/nmehlman/arts/pseudo_speakers/logs"
-  name: null
-  version: null     # Automatic versioning if set to null (recommended)
-
+  save_dir: "/project/shrikann_35/nmehlman/logs/ps_vae/"
+  name: "train_03_with_gender_classifier" 
+  version: null   
 

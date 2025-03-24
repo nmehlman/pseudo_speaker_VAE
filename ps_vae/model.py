@@ -1,11 +1,15 @@
 from typing import Tuple
 import torch.nn as nn
 import torch
+import torch.nn.functional as F
 
 
 class VAEModel(nn.Module):
-    def __init__(self, input_dim: int = 512, latent_dim: int = 64):
+    def __init__(self, input_dim: int = 512, latent_dim: int = 64, normalize_decoder: bool = False):
+        
         super().__init__()
+
+        self.normalize_decoder = normalize_decoder
 
         self.encoder_mu = nn.Sequential(
             nn.Linear(input_dim, 512),
@@ -53,7 +57,16 @@ class VAEModel(nn.Module):
         z = mu + sigma * torch.randn_like(sigma)
         x_hat = self.decoder(z)
 
+        if self.normalize_decoder:
+            x_hat = F.normalize(x_hat, p=2, dim=1)
+
         return x_hat, mu, log_sigma
+    
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        x_hat = self.decoder(z)
+        if self.normalize_decoder:
+            x_hat = F.normalize(x_hat, p=2, dim=1)
+        return x_hat
 
 
 if __name__ == "__main__":
