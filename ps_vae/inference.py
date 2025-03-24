@@ -29,6 +29,7 @@ def conditional_synthesis(
     classifier_target: int,
     step_size: float = 0.01,
     num_steps: int = 100,
+    noise_weight: float = 1.0,
     binary: bool = False,
     return_history: bool = False
     ) -> Tensor:
@@ -77,7 +78,7 @@ def conditional_synthesis(
         
         noise = torch.randn_like(z)
         
-        z = z + 0.5 * (step_size ** 2) * grad + step_size * noise
+        z = z + 0.5 * (step_size ** 2) * grad + step_size * noise_weight * noise
         
         history.append(z.detach().cpu().numpy())
         
