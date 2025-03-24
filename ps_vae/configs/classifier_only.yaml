@@ -1,0 +1,56 @@
+random_seed: 42
+ckpt_path: null
+gpus: "0,1"
+
+# Dataset options:
+dataset:
+  metadata_transform: "gender"
+  data_root: "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
+  split: "train"
+
+# Dataloader options:
+dataloader:
+  batch_size: 2048
+  num_workers: 16
+  train_frac: 0.9
+  prefetch_factor: 1
+
+# Model options:
+lightning:
+  freeze_vae: true
+  vae_checkpoint: "/project/shrikann_35/nmehlman/logs/ps_vae/train_02/version_0/checkpoints/epoch=199-step=14997.ckpt"
+  kl_loss_weight: 4
+  model:
+    input_dim: 512 
+    latent_dim: 16 
+  classifier:
+    input_dim: 16
+    hidden_dim: 512
+    num_classes: 3
+    num_layers: 3
+  optimizer:
+    lr: 0.0001
+    weight_decay: 0.000
+  scheduler:
+    T_max: 300
+
+
+# Training options:
+trainer:
+  max_epochs: 300
+  num_nodes: 1
+  val_check_interval: 0.25 
+  log_every_n_steps: 2    
+  sync_batchnorm: True
+  accelerator: "gpu"
+  devices: "auto"
+  deterministic: False
+  detect_anomaly: False
+  accumulate_grad_batches: 1
+
+# Tensorboard options:
+tensorboard:
+  save_dir: "/project/shrikann_35/nmehlman/logs/ps_vae/"
+  name: "classifier_only" 
+  version: null   
+

@@ -1,0 +1,14 @@
+[
+    {
+        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio.wav",
+        "save_filepath": "001.pt"
+    },
+    {
+        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio.wav",
+        "save_filepath": "002.pt"
+    },
+    {
+        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio.wav",
+        "save_filepath": "003.pt"
+    }
+]
