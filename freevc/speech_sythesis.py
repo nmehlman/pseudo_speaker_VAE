@@ -29,14 +29,17 @@ if __name__ == "__main__":
     import tqdm
     
     source_audio_path = "/home1/nmehlman/nick_codebase/misc/test_audio.wav"
-    embedding_dir = "/project/shrikann_35/nmehlman/psg_data/vctk_sample"
-    save_dir = "/home1/nmehlman/arts/pseudo_speakers/audio_samples/real_embeds"
+    embedding_dir = "/home1/nmehlman/arts/pseudo_speakers/generated_embeddings"
+    save_dir = "/home1/nmehlman/arts/pseudo_speakers/audio_samples/synthetic_embeds"
     vc_ckpt_dir = "/home1/nmehlman/.local/share/tts/voice_conversion_models--multilingual--vctk--freevc24/"
 
     # Load the FreeVC model
     model = load_freevc_model(vc_ckpt_dir)
 
     for embed_file in tqdm.tqdm(os.listdir(embedding_dir), desc="Converting audio"):
+        
+        if not embed_file.endswith(".pt"):      
+            continue
         
         id = embed_file.split("_")[-1].replace(".pt", "")
         
