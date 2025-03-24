@@ -46,8 +46,8 @@ class CVEmbeddingDataset(Dataset):
         }
 
         # Will only load existing embeddings in directory, not all files in metadata
+
         self.embed_dir = os.path.join(data_root, f"embeds_{se_model}", split)
-        
         self.embedding_files = [file for file in os.listdir(self.embed_dir) if file.endswith(".pth")]
 
     def __len__(self):
