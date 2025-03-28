@@ -27,10 +27,13 @@ def run_embedding_conditioned_vc(
 if __name__ == "__main__":
     
     import tqdm
+    import random
+    import os
     
-    source_audio_path = "/home1/nmehlman/nick_codebase/misc/test_audio.wav"
+    source_audio_file = random.choice(os.listdir("/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/clips"))
+    source_audio_path = os.path.join("/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/clips", source_audio_file)
     embedding_dir = "/home1/nmehlman/arts/pseudo_speakers/generated_embeddings"
-    save_dir = "/home1/nmehlman/arts/pseudo_speakers/audio_samples/synthetic_embeds"
+    save_dir = "/home1/nmehlman/arts/pseudo_speakers/audio_samples/synthetic_embeds_cv"
     vc_ckpt_dir = "/home1/nmehlman/.local/share/tts/voice_conversion_models--multilingual--vctk--freevc24/"
 
     # Load the FreeVC model

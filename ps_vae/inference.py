@@ -96,21 +96,17 @@ def conditional_synthesis(
 
 if __name__ == "__main__":
     
-    VAE_CKPT_PATH = "/project/shrikann_35/nmehlman/logs/ps_vae/train_03_with_gender_classifier/version_0/checkpoints/epoch=165-step=12447.ckpt"
+    VAE_CKPT_PATH = "/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_01/version_1/checkpoints/epoch=199-step=29800.ckpt"
     N_SAMPLES = 16
     SAVE_DIR = "/home1/nmehlman/arts/pseudo_speakers/generated_embeddings"
     
     model = PseudoSpeakerVAE.load_from_checkpoint(VAE_CKPT_PATH)
     
-    x_hat, history = conditional_synthesis(
+    x_hat = unconditional_synthesis(
         model, 
         N_SAMPLES,
-        classifier_target=1,
-        binary=False,
-        num_steps=1000,
-        return_history=True
     )
     
     
-    # for i, x in enumerate(x_hat):
-    #     torch.save(x, os.path.join(SAVE_DIR, f"sample_{i}.pt"))        
+    for i, x in enumerate(x_hat):
+        torch.save(x, os.path.join(SAVE_DIR, f"sample_{i}.pt"))        
