@@ -3,6 +3,7 @@ import torch
 import os
 from torch import Tensor
 from tqdm import tqdm
+import argparse
 import torch.nn.functional as F
 
 def unconditional_synthesis(vae_model: PseudoSpeakerVAE, num_samples: int) -> Tensor:
@@ -84,7 +85,7 @@ def conditional_synthesis(
         
         z.requires_grad_()
         
-        pbar.set_postfix({"Log Likelihood": log_p_z_given_y.mean().item()})
+        pbar.set_postfix({f"Log Likelihood": log_p_z_given_y.mean().item(), "Classifier Prob": log_p_y_given_z.exp().mean().item()})
     
     x_hat = vae_model.decode(z).detach().cpu()
     
@@ -96,17 +97,35 @@ def conditional_synthesis(
 
 if __name__ == "__main__":
     
-    VAE_CKPT_PATH = "/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_01/version_1/checkpoints/epoch=199-step=29800.ckpt"
-    N_SAMPLES = 16
-    SAVE_DIR = "/home1/nmehlman/arts/pseudo_speakers/generated_embeddings"
-    
-    model = PseudoSpeakerVAE.load_from_checkpoint(VAE_CKPT_PATH)
-    
-    x_hat = unconditional_synthesis(
-        model, 
-        N_SAMPLES,
-    )
-    
-    
+    parser = argparse.ArgumentParser(description="Generate synthetic embeddings using a VAE model.")
+    parser.add_argument("--vae_ckpt_path", type=str, required=True, help="Path to the VAE checkpoint.")
+    parser.add_argument("--n_samples", type=int, default=16, help="Number of samples to generate.")
+    parser.add_argument("--save_dir", type=str, required=True, help="Directory to save the generated samples.")
+    parser.add_argument("--synthesis_type", type=str, choices=["conditional", "unconditional"], required=True, help="Type of synthesis: 'conditional' or 'unconditional'.")
+    parser.add_argument("--classifier_target", type=int, default=1, help="Target class for the classifier (only for conditional synthesis).")
+    parser.add_argument("--num_steps", type=int, default=5000, help="Number of gradient ascent steps (only for conditional synthesis).")
+    parser.add_argument("--step_size", type=float, default=0.01, help="Step size for gradient ascent (only for conditional synthesis).")
+    parser.add_argument("--noise_weight", type=float, default=1.0, help="Weight of the noise added during synthesis (only for conditional synthesis).")
+
+    args = parser.parse_args()
+
+    model = PseudoSpeakerVAE.load_from_checkpoint(args.vae_ckpt_path)
+
+    if args.synthesis_type == "conditional":
+        x_hat = conditional_synthesis(
+            model, 
+            classifier_target=args.classifier_target,
+            num_samples=args.n_samples,
+            num_steps=args.num_steps,
+            step_size=args.step_size,
+            noise_weight=args.noise_weight
+        )
+    elif args.synthesis_type == "unconditional":
+        x_hat = unconditional_synthesis(
+            model,
+            num_samples=args.n_samples
+        )
+
+    os.makedirs(args.save_dir, exist_ok=True)
     for i, x in enumerate(x_hat):
-        torch.save(x, os.path.join(SAVE_DIR, f"sample_{i}.pt"))        
+        torch.save(x, os.path.join(args.save_dir, f"sample_{i}.pt"))
