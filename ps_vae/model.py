@@ -4,73 +4,250 @@ import torch
 import torch.nn.functional as F
 
 
-class VAEModel(nn.Module):
-    def __init__(self, input_dim: int = 512, latent_dim: int = 64, normalize_decoder: bool = False):
-        
-        super().__init__()
+def sample_gumbel(shape: torch.Size, eps: float = 1e-20) -> torch.Tensor:
+    """
+    Samples from the standard Gumbel(0, 1) distribution.
 
-        self.normalize_decoder = normalize_decoder
+    Args:
+        shape (torch.Size): Shape of the sampled tensor.
+        eps (float): Small constant for numerical stability.
 
-        self.encoder_mu = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, latent_dim),
-        )
+    Returns:
+        torch.Tensor: Sampled Gumbel noise.
+    """
+    uniform_noise = torch.rand(shape)
+    return -torch.log(-torch.log(uniform_noise + eps) + eps)
 
-        self.encoder_sigma = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, latent_dim),
-        )
 
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, input_dim),
-        )
+def gumbel_softmax_sample(logits: torch.Tensor, tau: float = 1.0) -> torch.Tensor:
+    """
+    Draws a sample from the Gumbel-Softmax distribution.
 
-    def forward(
-        self, x: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    Args:
+        logits (torch.Tensor): Unnormalized logits of shape [batch_size, num_categories].
+        tau (float): Temperature parameter controlling approximation (lower = closer to categorical).
+
+    Returns:
+        torch.Tensor: Gumbel-Softmax sample of shape [batch_size, num_categories] (differentiable).
+    """
+    gumbel_noise = sample_gumbel(logits.shape)
+    perturbed_logits = logits + gumbel_noise
+    return F.softmax(perturbed_logits / tau, dim=-1)
+
+
+def gumbel_softmax(logits: torch.Tensor, tau: float = 1.0, hard: bool = False) -> torch.Tensor:
+    """
+    Gumbel-Softmax function, optionally discretized (hard one-hot) using the straight-through trick.
+
+    Args:
+        logits (torch.Tensor): Unnormalized logits of shape [batch_size, num_categories].
+        tau (float): Temperature parameter.
+        hard (bool): If True, discretize output using the straight-through trick (one-hot vector).
+
+    Returns:
+        torch.Tensor: Gumbel-Softmax sample of shape [batch_size, num_categories].
+    """
+    soft_sample = gumbel_softmax_sample(logits, tau)
+
+    if hard:
+        # Straight-through trick: discretize the soft sample
+        max_indices = soft_sample.max(dim=-1, keepdim=True)[1]
+        hard_sample = torch.zeros_like(logits).scatter_(-1, max_indices, 1.0)
+
+        # Maintain gradients using the straight-through trick
+        return (hard_sample - soft_sample).detach() + soft_sample
+    return soft_sample
+
+
+class Encoder(nn.Module):
+    def __init__(
+        self,
+        input_dim: int,
+        latent_dim: int,
+        num_classes: int,
+        hidden_dim: int = 256,
+        encoder_dim: int = 256,
+    ):
         """
-        Forward pass through the VAE model.
+        Encoder network for the class posterior.
+
+        Args:
+            input_dim (int): Dimension of the input data.
+            latent_dim (int): Dimension of the latent space.
+            num_classes (int): Number of classes in the dataset.
+            hidden_dim (int): Dimension of the hidden layers.
+            encoder_dim (int): Dimension of the encoder output.
+        """
+        super(Encoder, self).__init__()
+
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, encoder_dim),
+            nn.ReLU(),
+        )
+
+        self.class_logits_layer = nn.Linear(encoder_dim, num_classes)
+        self.latent_mean_layer = nn.Linear(encoder_dim + num_classes, latent_dim)
+        self.latent_log_std_layer = nn.Linear(encoder_dim + num_classes, latent_dim)
+
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Forward pass of the encoder network.
 
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, input_dim).
 
         Returns:
-            Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: 
-                - x_hat (torch.Tensor): Reconstructed input tensor of shape (batch_size, input_dim).
-                - mu (torch.Tensor): Mean of the latent space distribution of shape (batch_size, latent_dim).
-                - sigma (torch.Tensor): Standard deviation of the latent space distribution of shape (batch_size, latent_dim).
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]: 
+                - Class probabilities (pi) of shape (batch_size, num_classes).
+                - Class logits of shape (batch_size, num_classes).
+                - Latent mean (mu) of shape (batch_size, latent_dim).
+                - Latent standard deviation (sigma) of shape (batch_size, latent_dim).
         """
+        encoded_features = self.encoder(x)
+        class_logits = self.class_logits_layer(encoded_features)
+        class_probs = class_logits.softmax(dim=1)
 
-        mu = self.encoder_mu(x)
-        log_sigma = self.encoder_sigma(x)
-        sigma = torch.exp(0.5 * log_sigma)
-        z = mu + sigma * torch.randn_like(sigma)
-        x_hat = self.decoder(z)
+        combined_features = torch.cat([encoded_features, class_probs], dim=1)
+        latent_mean = self.latent_mean_layer(combined_features)
+        latent_log_std = self.latent_log_std_layer(combined_features)
+        latent_std = latent_log_std.exp()
 
-        if self.normalize_decoder:
-            x_hat = F.normalize(x_hat, p=2, dim=1)
+        return class_probs, class_logits, latent_mean, latent_std
 
-        return x_hat, mu, log_sigma
-    
-    def decode(self, z: torch.Tensor) -> torch.Tensor:
-        x_hat = self.decoder(z)
-        if self.normalize_decoder:
-            x_hat = F.normalize(x_hat, p=2, dim=1)
-        return x_hat
+
+class Decoder(nn.Module):
+    def __init__(self, input_dim: int, latent_dim: int, num_classes: int, hidden_dim: int = 256):
+        """
+        Decoder network for reconstructing the input.
+
+        Args:
+            input_dim (int): Dimension of the input data.
+            latent_dim (int): Dimension of the latent space.
+            num_classes (int): Number of classes in the dataset.
+            hidden_dim (int): Dimension of the hidden layers.
+        """
+        super(Decoder, self).__init__()
+
+        self.decoder = nn.Sequential(
+            nn.Linear(latent_dim + num_classes, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, input_dim),
+        )
+
+    def forward(self, latent_z: torch.Tensor, class_probs: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the decoder network.
+
+        Args:
+            latent_z (torch.Tensor): Latent variable tensor of shape (batch_size, latent_dim).
+            class_probs (torch.Tensor): Class probabilities tensor of shape (batch_size, num_classes).
+
+        Returns:
+            torch.Tensor: Reconstructed input tensor of shape (batch_size, input_dim).
+        """
+        combined_input = torch.cat([latent_z, class_probs], dim=1)
+        reconstructed_x = self.decoder(combined_input)
+        return reconstructed_x
+
+
+class Priors(nn.Module):
+    def __init__(self, latent_dim: int, num_classes: int):
+        """
+        Priors network for generating class-conditioned priors.
+
+        Args:
+            latent_dim (int): Dimension of the latent space.
+            num_classes (int): Number of classes in the dataset.
+        """
+        super(Priors, self).__init__()
+
+        self.class_mean = nn.Parameter(torch.randn(num_classes, latent_dim))
+        self.class_log_std = nn.Parameter(torch.randn(num_classes, latent_dim))
+
+    def forward(self, class_probs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Forward pass of the priors network.
+
+        Args:
+            class_probs (torch.Tensor): Class probabilities tensor of shape (batch_size, num_classes).
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: 
+                - Class-conditioned mean (mu) of shape (batch_size, latent_dim).
+                - Class-conditioned standard deviation (sigma) of shape (batch_size, latent_dim).
+        """
+        mean = torch.matmul(class_probs, self.class_mean)
+        std = torch.matmul(class_probs, self.class_log_std.exp())
+        return mean, std
+
+
+class cVAE(nn.Module):
+    def __init__(
+        self,
+        input_dim: int,
+        latent_dim: int,
+        num_classes: int,
+        hidden_dim: int = 256,
+        tau: float = 1.0,
+    ):
+        """
+        Conditional Variational Autoencoder (cVAE) model.
+
+        Args:
+            input_dim (int): Dimension of the input data.
+            latent_dim (int): Dimension of the latent space.
+            num_classes (int): Number of classes in the dataset.
+            hidden_dim (int): Dimension of the hidden layers.
+            tau (float): Temperature parameter for Gumbel-Softmax.
+        """
+        super(cVAE, self).__init__()
+
+        self.encoder = Encoder(input_dim, latent_dim, num_classes, hidden_dim)
+        self.decoder = Decoder(input_dim, latent_dim, num_classes, hidden_dim)
+        self.priors = Priors(latent_dim, num_classes)
+        self.tau = tau
+
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Forward pass of the cVAE model.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, input_dim).
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]: 
+                - Reconstructed input (x_recon) of shape (batch_size, input_dim).
+                - Latent mean (mu) of shape (batch_size, latent_dim).
+                - Latent standard deviation (sigma) of shape (batch_size, latent_dim).
+                - Soft sampled class (c) of shape (batch_size, num_classes).
+                - Class probabilities (pi) of shape (batch_size, num_classes).
+        """
+        class_probs, class_logits, latent_mean, latent_std = self.encoder(x)
+        sampled_class = gumbel_softmax(class_logits, tau=self.tau, hard=False)
+        latent_z = latent_mean + latent_std * torch.randn_like(latent_mean)
+        reconstructed_x = self.decoder(latent_z, sampled_class)
+
+        return reconstructed_x, latent_mean, latent_std, sampled_class, class_probs
 
 
 if __name__ == "__main__":
-    model = VAEModel(784, 20)
-    z = torch.randn(32, 784)
-    x_hat, mu, sigma = model(z)
-    print(x_hat.shape, mu.shape, sigma.shape)
+    
+    input_dim = 784
+    latent_dim = 20
+    num_classes = 10
+    batch_size = 16
+
+    model = cVAE(input_dim, latent_dim, num_classes)
+    x_dummy = torch.randn(batch_size, input_dim)
+
+    x_recon, mu, sigma, c, pi = model(x_dummy)
+
+    print("x_recon shape:", x_recon.shape)  # expect: [batch_size, input_dim]
+    print("mu shape:", mu.shape)            # expect: [batch_size, latent_dim]
+    print("sigma shape:", sigma.shape)      # expect: [batch_size, latent_dim]
+    print("c shape:", c.shape)              # expect: [batch_size, num_classes]
+    print("pi shape:", pi.shape)            # expect: [batch_size, num_classes]
