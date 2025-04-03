@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 
+# TODO - Add tau scheduling
+
 
 def sample_gumbel(shape: torch.Size, eps: float = 1e-20) -> torch.Tensor:
     """
@@ -112,9 +114,8 @@ class Encoder(nn.Module):
         combined_features = torch.cat([encoded_features, class_probs], dim=1)
         latent_mean = self.latent_mean_layer(combined_features)
         latent_log_std = self.latent_log_std_layer(combined_features)
-        latent_std = latent_log_std.exp()
 
-        return class_probs, class_logits, latent_mean, latent_std
+        return class_probs, class_logits, latent_mean, latent_log_std
 
 
 class Decoder(nn.Module):
@@ -152,39 +153,7 @@ class Decoder(nn.Module):
         combined_input = torch.cat([latent_z, class_probs], dim=1)
         reconstructed_x = self.decoder(combined_input)
         return reconstructed_x
-
-
-class Priors(nn.Module):
-    def __init__(self, latent_dim: int, num_classes: int):
-        """
-        Priors network for generating class-conditioned priors.
-
-        Args:
-            latent_dim (int): Dimension of the latent space.
-            num_classes (int): Number of classes in the dataset.
-        """
-        super(Priors, self).__init__()
-
-        self.class_mean = nn.Parameter(torch.randn(num_classes, latent_dim))
-        self.class_log_std = nn.Parameter(torch.randn(num_classes, latent_dim))
-
-    def forward(self, class_probs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Forward pass of the priors network.
-
-        Args:
-            class_probs (torch.Tensor): Class probabilities tensor of shape (batch_size, num_classes).
-
-        Returns:
-            Tuple[torch.Tensor, torch.Tensor]: 
-                - Class-conditioned mean (mu) of shape (batch_size, latent_dim).
-                - Class-conditioned standard deviation (sigma) of shape (batch_size, latent_dim).
-        """
-        mean = torch.matmul(class_probs, self.class_mean)
-        std = torch.matmul(class_probs, self.class_log_std.exp())
-        return mean, std
-
-
+    
 class cVAE(nn.Module):
     def __init__(
         self,
@@ -208,7 +177,6 @@ class cVAE(nn.Module):
 
         self.encoder = Encoder(input_dim, latent_dim, num_classes, hidden_dim)
         self.decoder = Decoder(input_dim, latent_dim, num_classes, hidden_dim)
-        self.priors = Priors(latent_dim, num_classes)
         self.tau = tau
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -226,17 +194,17 @@ class cVAE(nn.Module):
                 - Soft sampled class (c) of shape (batch_size, num_classes).
                 - Class probabilities (pi) of shape (batch_size, num_classes).
         """
-        class_probs, class_logits, latent_mean, latent_std = self.encoder(x)
+        class_probs, class_logits, latent_mean, latent_log_std = self.encoder(x)
         sampled_class = gumbel_softmax(class_logits, tau=self.tau, hard=False)
-        latent_z = latent_mean + latent_std * torch.randn_like(latent_mean)
+        latent_z = latent_mean + latent_log_std.exp() * torch.randn_like(latent_mean)
         reconstructed_x = self.decoder(latent_z, sampled_class)
 
-        return reconstructed_x, latent_mean, latent_std, sampled_class, class_probs
+        return reconstructed_x, latent_mean, latent_log_std, sampled_class, class_probs
 
 
 if __name__ == "__main__":
     
-    input_dim = 784
+    input_dim = 784 
     latent_dim = 20
     num_classes = 10
     batch_size = 16
