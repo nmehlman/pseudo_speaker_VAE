@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the base sample directory
-SAMPLE_DIR="/home1/nmehlman/arts/pseudo_speakers/samples/synthetic_embeddings/cv_train/psg-17_cond_female"
-VAE_CHECKPOINT_PATH="/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_gender_classifier/version_0/checkpoints/epoch=199-step=29800.ckpt"
+SAMPLE_DIR="/home1/nmehlman/arts/pseudo_speakers/samples/synthetic_embeddings/cv_train/psg-18_cond_female"
+VAE_CHECKPOINT_PATH="/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_gender_classifier/version_1/checkpoints/epoch=199-step=29800.ckpt"
 SOURCE_AUDIO_PATH="/home1/nmehlman/nick_codebase/misc/test_audio.wav"
 SYNTHESIS_TYPE="conditional"
 CLASSIFIER_TARGET=1
@@ -56,6 +56,7 @@ conda deactivate
 
 # Activate the TTS Conda environment
 conda activate TTS
+export SSL_CERT_FILE="$(python -c 'import certifi; print(certifi.where())')" # Set SSL_CERT_FILE for TTS
 
 # Run speech_synthesis.py to generate audio samples
 echo "Running speech_synthesis.py..."

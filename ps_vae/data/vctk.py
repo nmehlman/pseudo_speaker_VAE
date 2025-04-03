@@ -29,31 +29,42 @@ class VCTKEmbeddingDataset(Dataset):
         else:
             self.metadata_transform = None
             
-        # Read metadata file
-        self.metadata = pd.read_csv(os.path.join(data_root, "vctk_metadata.csv"))
+        # Read metadata file and convert to a dictionary
+        metadata_df = pd.read_csv(os.path.join(data_root, "vctk_metadata.csv"))
+        self.metadata = {
+            row['file_name']: {key: row[key] for key in row.index if key != 'file_name'}
+            for _, row in metadata_df.iterrows()
+        }
         
-        # Build a list of tuples: (embedding_file_path, speaker_id)
+        # Build a list of tuples: (embedding_file_path, file_name)
         self.data_files = []
+        for speaker_id in os.listdir(data_root):
+            if speaker_id.startswith("p"):
+                speaker_dir = os.path.join(data_root, speaker_id)
+                for file_name in os.listdir(speaker_dir):
+                    if file_name.endswith(".pt"):
+                        self.data_files.append((os.path.join(speaker_dir, file_name), file_name))
 
     def __len__(self):
         return len(self.metadata)
 
     def __getitem__(self, idx: int):
         
-        sample_data = self.metadata.iloc[idx]
+        embed_file, file_name = self.data_files[idx]
         
-        filename = sample_data['filename'].replace('.wav', '.pt')
-        speaker_id = sample_data['speaker_id']
+        file_name = file_name.replace('_mic1.pt', '.wav')
+        sample_data = self.metadata[file_name]
 
         if self.metadata_transform is not None:  # Apply transform if provided
             metadata = self.metadata_transform(sample_data)
-
+            
         else:
-            # Load embedding
-            embed_file = os.path.join(self.data_root, f"p{speaker_id}", filename)
-            embed = torch.load(embed_file, weights_only=True)
+            metadata = sample_data
+            
+        # Load embedding
+        embed = torch.load(embed_file, weights_only=True)
 
-            return embed.squeeze(), metadata
+        return embed.squeeze(), metadata
 
 def get_vctk_dataloaders(
     dataset_kwargs: Dict = {},
@@ -99,9 +110,12 @@ def get_vctk_dataloaders(
 
 if __name__ == "__main__":
     
+    import tqdm
+    
     data_root = "/project/shrikann_35/nmehlman/psg_data/vctk_embeds/"
     
-    dset = VCTKEmbeddingDataset(data_root)
-    for x,y in dset:
-        print(x.shape, y)
-        break
+    dset = VCTKEmbeddingDataset(data_root, metadata_transform=None)
+    print(len(dset))
+    for x,y in tqdm.tqdm(dset):
+        #print(x.shape, y)
+        pass
