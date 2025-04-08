@@ -108,11 +108,11 @@ class PseudoSpeakerVAE(pl.LightningModule):
         total_loss, recon_loss, kl_loss = self.compute_losses(x, x_hat, mu, log_sigma, pi, classifier_loss)
 
         # Logging
-        self.log("train_loss", total_loss)
-        self.log("train_recon_loss", recon_loss)
-        self.log("train_kl_loss", kl_loss)
+        self.log("train_loss", total_loss, sync_dist=True)
+        self.log("train_recon_loss", recon_loss, sync_dist=True)
+        self.log("train_kl_loss", kl_loss, sync_dist=True)
         if self.classifier:
-            self.log("train_classifier_loss", classifier_loss)
+            self.log("train_classifier_loss", classifier_loss, sync_dist=True)
 
         return {"loss": total_loss}
 
@@ -197,11 +197,11 @@ class PseudoSpeakerVAE(pl.LightningModule):
         total_loss, recon_loss, kl_loss = self.compute_losses(x, x_hat, mu, log_sigma, pi, classifier_loss)
 
         # Logging
-        self.log("val_loss", total_loss, batch_size=x.size(0))
-        self.log("val_recon_loss", recon_loss, batch_size=x.size(0))
-        self.log("val_kl_loss", kl_loss, batch_size=x.size(0))
+        self.log("val_loss", total_loss, batch_size=x.size(0), sync_dist=True)
+        self.log("val_recon_loss", recon_loss, batch_size=x.size(0), sync_dist=True)
+        self.log("val_kl_loss", kl_loss, batch_size=x.size(0), sync_dist=True)
         if self.classifier:
-            self.log("val_classifier_loss", classifier_loss, batch_size=x.size(0))
+            self.log("val_classifier_loss", classifier_loss, batch_size=x.size(0), sync_dist=True)
 
         return {"loss": total_loss}
 

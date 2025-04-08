@@ -1,10 +1,9 @@
+# TODO - Add tau scheduling
+
 from typing import Tuple
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-
-# TODO - Add tau scheduling
-
 
 def sample_gumbel(shape: torch.Size, eps: float = 1e-20) -> torch.Tensor:
     """
@@ -32,7 +31,7 @@ def gumbel_softmax_sample(logits: torch.Tensor, tau: float = 1.0) -> torch.Tenso
     Returns:
         torch.Tensor: Gumbel-Softmax sample of shape [batch_size, num_categories] (differentiable).
     """
-    gumbel_noise = sample_gumbel(logits.shape)
+    gumbel_noise = sample_gumbel(logits.shape).to(logits.device)
     perturbed_logits = logits + gumbel_noise
     return F.softmax(perturbed_logits / tau, dim=-1)
 
@@ -119,7 +118,7 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, input_dim: int, latent_dim: int, num_classes: int, hidden_dim: int = 256):
+    def __init__(self, input_dim: int, latent_dim: int, num_classes: int, hidden_dim: int = 256, normalize: bool = False):
         """
         Decoder network for reconstructing the input.
 
@@ -128,8 +127,11 @@ class Decoder(nn.Module):
             latent_dim (int): Dimension of the latent space.
             num_classes (int): Number of classes in the dataset.
             hidden_dim (int): Dimension of the hidden layers.
+            normalize (bool): If True, normalize the output.
         """
         super(Decoder, self).__init__()
+
+        self.normalize = normalize
 
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim + num_classes, hidden_dim),
@@ -152,6 +154,9 @@ class Decoder(nn.Module):
         """
         combined_input = torch.cat([latent_z, class_probs], dim=1)
         reconstructed_x = self.decoder(combined_input)
+        if self.normalize:
+            reconstructed_x = F.normalize(reconstructed_x, p=2, dim=1)
+
         return reconstructed_x
     
 class cVAE(nn.Module):
@@ -162,6 +167,7 @@ class cVAE(nn.Module):
         num_classes: int,
         hidden_dim: int = 256,
         tau: float = 1.0,
+        normalize_decoder: bool = False
     ):
         """
         Conditional Variational Autoencoder (cVAE) model.
@@ -172,12 +178,14 @@ class cVAE(nn.Module):
             num_classes (int): Number of classes in the dataset.
             hidden_dim (int): Dimension of the hidden layers.
             tau (float): Temperature parameter for Gumbel-Softmax.
+            normalize_decoder (bool): If True, normalize the decoder output.
         """
         super(cVAE, self).__init__()
 
         self.encoder = Encoder(input_dim, latent_dim, num_classes, hidden_dim)
-        self.decoder = Decoder(input_dim, latent_dim, num_classes, hidden_dim)
+        self.decoder = Decoder(input_dim, latent_dim, num_classes, hidden_dim, normalize=normalize_decoder)
         self.tau = tau
+        self.normalize_decoder = normalize_decoder
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """

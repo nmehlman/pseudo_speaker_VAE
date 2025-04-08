@@ -34,7 +34,7 @@ class LatentSpacePCACallback(pl.Callback):
                     break
                 batch = batch.to(device)
                 
-                _, latent_repr, _ = pl_module(batch)  
+                _, latent_repr, _, _, _ = pl_module(batch)  
                 latent_vectors.append(latent_repr.cpu().numpy())
 
         # Convert to NumPy arrays
