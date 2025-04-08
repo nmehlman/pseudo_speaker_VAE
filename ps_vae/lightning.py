@@ -52,7 +52,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
             classifier_loss = nn.functional.cross_entropy(y_hat, y)
             classifier_acc = self.accuracy(y_hat, y)
             self.log("train_classifier_acc", classifier_acc, sync_dist=True)
-            self.log("train_classifier_loss", classifier_loss)
+            self.log("train_classifier_loss", classifier_loss, sync_dist=True)
         else:
             classifier_loss = 0
 
@@ -72,9 +72,9 @@ class PseudoSpeakerVAE(pl.LightningModule):
         )
         
         # Logging
-        self.log("train_loss", total_loss)
-        self.log("train_recon_loss", recon_loss)
-        self.log("train_kl_loss", kl_loss)
+        self.log("train_loss", total_loss, sync_dist=True)
+        self.log("train_recon_loss", recon_loss, sync_dist=True)
+        self.log("train_kl_loss", kl_loss, sync_dist=True)
 
         return {"loss": total_loss}
     
@@ -109,9 +109,9 @@ class PseudoSpeakerVAE(pl.LightningModule):
         )
         
         # Logging
-        self.log("val_loss", total_loss, batch_size=x.size(0))
-        self.log("val_recon_loss", recon_loss, batch_size=x.size(0))
-        self.log("val_kl_loss", kl_loss, batch_size=x.size(0))
+        self.log("val_loss", total_loss, batch_size=x.size(0), sync_dist=True)
+        self.log("val_recon_loss", recon_loss, batch_size=x.size(0), sync_dist=True)
+        self.log("val_kl_loss", kl_loss, batch_size=x.size(0), sync_dist=True)
 
         return {"loss": total_loss}
 

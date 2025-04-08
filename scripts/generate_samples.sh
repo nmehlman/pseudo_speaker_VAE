@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Define the base sample directory
-SAMPLE_DIR="/home1/nmehlman/arts/pseudo_speakers/samples/synthetic_embeddings/cv_train/psg-19_cond_female"
+SAMPLE_DIR="/home1/nmehlman/arts/pseudo_speakers/samples/synthetic_embeddings/cv_train/psg-19_cond_male"
 VAE_CHECKPOINT_PATH="/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_gender_classifier/version_2/checkpoints/epoch=199-step=59400.ckpt"
 SOURCE_AUDIO_PATH="/home1/nmehlman/nick_codebase/misc/test_audio.wav"
 SYNTHESIS_TYPE="conditional"
-CLASSIFIER_TARGET=1
+CLASSIFIER_TARGET=0
 NUM_STEPS=5000
 STEP_SIZE=0.02
 NOISE_WEIGHT=1.0
