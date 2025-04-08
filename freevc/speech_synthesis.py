@@ -27,11 +27,23 @@ def run_embedding_conditioned_vc(
 if __name__ == "__main__":
     
     import tqdm
+    import os
+    import argparse
+
+    default_vc_ckpt_dir = "/home1/nmehlman/.local/share/tts/voice_conversion_models--multilingual--vctk--freevc24/" # Default
     
-    source_audio_path = "/home1/nmehlman/nick_codebase/misc/test_audio.wav"
-    embedding_dir = "/home1/nmehlman/arts/pseudo_speakers/generated_embeddings"
-    save_dir = "/home1/nmehlman/arts/pseudo_speakers/audio_samples/synthetic_embeds"
-    vc_ckpt_dir = "/home1/nmehlman/.local/share/tts/voice_conversion_models--multilingual--vctk--freevc24/"
+    parser = argparse.ArgumentParser(description="Run voice conversion using FreeVC.")
+    parser.add_argument("--source_audio_path", type=str, required=True, help="Path to the source audio file.")
+    parser.add_argument("--embedding_dir", type=str, required=True, help="Directory containing speaker embeddings.")
+    parser.add_argument("--save_dir", type=str, required=True, help="Directory to save the converted audio files.")
+    parser.add_argument("--vc_ckpt_dir", type=str, default=default_vc_ckpt_dir, help="Path to the FreeVC checkpoint directory.")
+    
+    args = parser.parse_args()
+    
+    source_audio_path = args.source_audio_path
+    embedding_dir = args.embedding_dir
+    save_dir = args.save_dir
+    vc_ckpt_dir = args.vc_ckpt_dir
 
     # Load the FreeVC model
     model = load_freevc_model(vc_ckpt_dir)

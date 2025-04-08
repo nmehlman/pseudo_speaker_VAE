@@ -3,7 +3,7 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import os
-from ps_vae.data import CVEmbeddingDataset
+from ps_vae.data.cv import CVEmbeddingDataset
 from ps_vae.lightning import PseudoSpeakerVAE
 from typing import Callable, List, Optional
 
@@ -64,15 +64,16 @@ if __name__ == "__main__":
     N_SAMPLES = 1000
     DEMOGRAPHIC = "gender"
     APPLY_AGE_GROUPINGS = True
-    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/train_03_with_gender_classifier/version_0/checkpoints/epoch=165-step=12447.ckpt'
+    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_gender_classifier/version_1/checkpoints/epoch=199-step=29800.ckpt'
     DATA_ROOT = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
+    SE_MODEL = "vc"
     SAVE_AS = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/vae_latent_gender+classifier.png"
     USE_TSNE = False  # Set to True to use TSNE, False to use PCA
     
-    filter_fcn = lambda sample: sample['accents'] == 'United States English'
+    filter_fcn = None #lambda sample: sample['accents'] == 'United States English'
     stratification_fcn = None
     
-    dataset = CVEmbeddingDataset(DATA_ROOT, split="train")
+    dataset = CVEmbeddingDataset(DATA_ROOT, split="train", se_model=SE_MODEL)
 
     if MODEL_CKPT:
         model = PseudoSpeakerVAE.load_from_checkpoint(MODEL_CKPT)

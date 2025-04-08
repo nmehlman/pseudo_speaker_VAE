@@ -118,3 +118,18 @@ def map_cv_gender_to_label(gender):
     }
     return gender_mapping.get(gender, -1)  # Returns -1 if gender is not in the mapping
 
+def map_vctk_gender_to_label(gender):
+    """
+    Maps a single gender category to a numerical label.
+
+    Args:
+        gender (str): Gender category as a string.
+
+    Returns:
+        int: Numerical gender label.
+    """
+    gender_mapping = {
+        'M': 0,
+        'F': 1,
+    }
+    return gender_mapping.get(gender, -1)  # Returns -1 if gender is not in the mapping
