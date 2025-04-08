@@ -3,43 +3,68 @@ import torch
 import pickle
 from torch.utils.data import Dataset, DataLoader, random_split
 from typing import Dict, Union, Callable
+from ps_vae.utils import map_vctk_gender_to_label
+import pandas as pd
+
+METADATA_TRANSFORMS = {
+    "gender": lambda x: map_vctk_gender_to_label(x['gender']),
+}
 
 class VCTKEmbeddingDataset(Dataset):
-    def __init__(self, data_root: str, split: str = "train"):
+    def __init__(self, data_root: str, split: str = "train", metadata_transform: Union[str, None] = None):
         """
         Initialize the VCTK dataset.
 
         Args:
             data_root (str): Root directory containing speaker directories (e.g., "p001", "p002", ...).
             split (str): Data split indicator (unused in this version, kept for consistency).
+            metadata_transform (str, optional): Metadata transformation to apply to each sample. Defaults to None.
         """
         self.data_root = data_root
-        # Build a list of tuples: (embedding_file_path, speaker_id)
+        
+         # Setup function to parse metadata
+        if metadata_transform is not None:
+            assert metadata_transform in METADATA_TRANSFORMS, f"Invalid metadata transform: {metadata_transform}"
+            self.metadata_transform = METADATA_TRANSFORMS[metadata_transform]
+        else:
+            self.metadata_transform = None
+            
+        # Read metadata file and convert to a dictionary
+        metadata_df = pd.read_csv(os.path.join(data_root, "vctk_metadata.csv"))
+        self.metadata = {
+            row['file_name']: {key: row[key] for key in row.index if key != 'file_name'}
+            for _, row in metadata_df.iterrows()
+        }
+        
+        # Build a list of tuples: (embedding_file_path, file_name)
         self.data_files = []
-
-        # Loop over each speaker directory in the data_root that follows the "pXXX" pattern.
-        for speaker_dir in sorted(os.listdir(data_root)):
-            speaker_path = os.path.join(data_root, speaker_dir)
-            if os.path.isdir(speaker_path) and speaker_dir.startswith("p") and speaker_dir[1:].isdigit():
-                # Extract speaker ID by stripping the 'p' and converting the rest to an integer.
-                speaker_id = int(speaker_dir[1:])
-                # List all .pkl files in the speaker directory.
-                embedding_files = [f for f in os.listdir(speaker_path) if f.endswith(".pt")]
-                embedding_files.sort()
-                # Append each file's full path along with the speaker ID.
-                for file in embedding_files:
-                    full_path = os.path.join(speaker_path, file)
-                    self.data_files.append((full_path, speaker_id))
+        for speaker_id in os.listdir(data_root):
+            if speaker_id.startswith("p"):
+                speaker_dir = os.path.join(data_root, speaker_id)
+                for file_name in os.listdir(speaker_dir):
+                    if file_name.endswith(".pt"):
+                        self.data_files.append((os.path.join(speaker_dir, file_name), file_name))
 
     def __len__(self):
-        return len(self.data_files)
+        return len(self.metadata)
 
     def __getitem__(self, idx: int):
-        embedding_file, speaker_id = self.data_files[idx]
-        # Load the embedding from the pkl file.
-        with open(embedding_file, "rb") as f:
-            embedding = torch.load(f, map_location='cpu', weights_only=False).squeeze()
-        return embedding, speaker_id
+        
+        embed_file, file_name = self.data_files[idx]
+        
+        file_name = file_name.replace('_mic1.pt', '.wav')
+        sample_data = self.metadata[file_name]
+
+        if self.metadata_transform is not None:  # Apply transform if provided
+            metadata = self.metadata_transform(sample_data)
+            
+        else:
+            metadata = sample_data
+            
+        # Load embedding
+        embed = torch.load(embed_file, weights_only=True)
+
+        return embed.squeeze(), metadata
 
 def get_vctk_dataloaders(
     dataset_kwargs: Dict = {},
@@ -82,3 +107,15 @@ def get_vctk_dataloaders(
         return DataLoader(
             dataset, batch_size=batch_size, collate_fn=collate_fn, **dataloader_kwargs
         )
+
+if __name__ == "__main__":
+    
+    import tqdm
+    
+    data_root = "/project/shrikann_35/nmehlman/psg_data/vctk_embeds/"
+    
+    dset = VCTKEmbeddingDataset(data_root, metadata_transform=None)
+    print(len(dset))
+    for x,y in tqdm.tqdm(dset):
+        #print(x.shape, y)
+        pass
