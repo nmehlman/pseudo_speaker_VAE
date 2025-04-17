@@ -10,10 +10,10 @@ from typing import Callable, List, Optional
 AGE_GROUPINGS = {
     "teens": "Young",
     "twenties": "Young",
-    "thirties": "Young",
+    "thirties": "Middle-aged",
     "fourties": "Middle-aged",
     "fifties": "Middle-aged",
-    "sixties": "Middle-aged",
+    "sixties": "Old",
     "seventies": "Old",
     "eighties": "Old",
     "nineties": "Old",
@@ -62,9 +62,9 @@ def stratified_sampling(
 if __name__ == "__main__":
     
     N_SAMPLES = 1000
-    DEMOGRAPHIC = "gender"
+    DEMOGRAPHIC = "age"
     APPLY_AGE_GROUPINGS = True
-    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_gender_classifier/version_1/checkpoints/epoch=199-step=29800.ckpt'
+    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_age_classifier/version_0/checkpoints/epoch=199-step=59400.ckpt'
     DATA_ROOT = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
     SE_MODEL = "vc"
     SAVE_AS = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/vae_latent_gender+classifier.png"
