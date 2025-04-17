@@ -135,3 +135,16 @@ def get_cv_dataloaders(
 
         return loader
 
+if __name__ == "__main__":
+    
+    dset = CVEmbeddingDataset(
+        data_root="/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/",
+        se_model='vc',
+        split='train',
+        metadata_transform='gender',
+        metadata_only=True
+        )
+    
+    print(len(dset))
+    for sample in dset:
+        pass
