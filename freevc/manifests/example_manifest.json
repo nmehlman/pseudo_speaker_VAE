@@ -1,14 +1,14 @@
 [
     {
-        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio.wav",
+        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio1.wav",
         "save_filepath": "001.pth"
     },
     {
-        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio.wav",
+        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio2.wav",
         "save_filepath": "002.pth"
     },
     {
-        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio.wav",
+        "audio_filepath": "/home1/nmehlman/nick_codebase/misc/test_audio3.wav",
         "save_filepath": "003.pth"
     }
 ]

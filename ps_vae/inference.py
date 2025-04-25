@@ -3,6 +3,7 @@ import torch
 import os
 from torch import Tensor
 from tqdm import tqdm
+import json
 import argparse
 import torch.nn.functional as F
 
@@ -27,11 +28,10 @@ def unconditional_synthesis(vae_model: PseudoSpeakerVAE, num_samples: int) -> Te
 def conditional_synthesis(
     vae_model: PseudoSpeakerVAE, 
     num_samples: int,
-    classifier_target: int,
+    classifier_target: int | dict,
     step_size: float = 0.01,
     num_steps: int = 100,
     noise_weight: float = 1.0,
-    binary: bool = False,
     return_history: bool = False
     ) -> Tensor:
     """
@@ -49,6 +49,22 @@ def conditional_synthesis(
     Returns:
         Tensor: Generated samples.
     """
+
+    def _get_classifer_probs(logits, classifier_target):
+        log_probs = F.log_softmax(logits, dim=-1)
+            
+        # Compute log p(y|z) + log p(z)
+        if log_probs.shape[1] == 1: # Binary
+            if classifier_target == 1:
+                log_p_y_given_z = log_probs
+            elif classifier_target == 0:
+                log_p_y_given_z = 1-log_probs
+            else:
+                raise ValueError("classifier_target must be 0 or 1 for binary classifier")
+        else:
+            log_p_y_given_z = log_probs[:, classifier_target]
+
+        return log_p_y_given_z
     
     dim = vae_model.hparams.model['latent_dim']
     z = torch.randn((num_samples, dim), requires_grad=True)
@@ -59,18 +75,14 @@ def conditional_synthesis(
     
         # Get predicted probabilities from classifier
         logits = vae_model.classifier(z)
-        log_probs = F.log_softmax(logits, dim=-1)
-        
-        # Compute log p(y|z) + log p(z)
-        if binary:
-            if classifier_target == 1:
-                log_p_y_given_z = log_probs
-            elif classifier_target == 0:
-                log_p_y_given_z = 1-log_probs
-            else:
-                raise ValueError("classifier_target must be 0 or 1 for binary classifier")
+        if isinstance(logits, dict):
+            assert isinstance(classifier_target, dict), "classifier_target must be a dict for multi-label classifier"
+            log_p_y_given_z = 0
+            for label, target in classifier_target.items():
+                log_p_y_given_z += _get_classifer_probs(logits[label], target)
+
         else:
-            log_p_y_given_z = log_probs[:, classifier_target]
+            log_p_y_given_z = _get_classifer_probs(logits, classifier_target)
             
         log_p_z = -0.5 * (z ** 2).sum(dim=1)
         
@@ -102,19 +114,25 @@ if __name__ == "__main__":
     parser.add_argument("--n_samples", type=int, default=16, help="Number of samples to generate.")
     parser.add_argument("--save_dir", type=str, required=True, help="Directory to save the generated samples.")
     parser.add_argument("--synthesis_type", type=str, choices=["conditional", "unconditional"], required=True, help="Type of synthesis: 'conditional' or 'unconditional'.")
-    parser.add_argument("--classifier_target", type=int, default=1, help="Target class for the classifier (only for conditional synthesis).")
+    parser.add_argument("--classifier_target", type=str, default='1', help="Target class for the classifier (only for conditional synthesis).")
     parser.add_argument("--num_steps", type=int, default=5000, help="Number of gradient ascent steps (only for conditional synthesis).")
     parser.add_argument("--step_size", type=float, default=0.01, help="Step size for gradient ascent (only for conditional synthesis).")
     parser.add_argument("--noise_weight", type=float, default=1.0, help="Weight of the noise added during synthesis (only for conditional synthesis).")
 
     args = parser.parse_args()
 
+    # Parse classifier_target as int or dict
+    try:
+        classifier_target = json.loads(args.classifier_target)
+    except json.JSONDecodeError:
+        classifier_target = int(args.classifier_target)
+
     model = PseudoSpeakerVAE.load_from_checkpoint(args.vae_ckpt_path)
 
     if args.synthesis_type == "conditional":
         x_hat = conditional_synthesis(
             model, 
-            classifier_target=args.classifier_target,
+            classifier_target=classifier_target,
             num_samples=args.n_samples,
             num_steps=args.num_steps,
             step_size=args.step_size,

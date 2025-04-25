@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from io import BytesIO
 import PIL.Image
+import pandas as pd
 import numpy as np
 import torchvision.transforms as transforms
 
@@ -64,7 +65,6 @@ class LatentSpacePCACallback(pl.Callback):
         trainer.logger.experiment.add_image("Latent Space PCA", img_tensor, global_step=trainer.current_epoch)
 
         plt.close()
-
 
 def load_yaml_config(file_path: str) -> dict:
     """Loads config from yaml file
@@ -134,3 +134,46 @@ def map_vctk_gender_to_label(gender):
         'F': 1,
     }
     return gender_mapping.get(gender, -1)  # Returns -1 if gender is not in the mapping
+
+def sample_from_cv_metadata(metadata: pd.DataFrame, num_samples: int, conditions: dict = {}) -> pd.DataFrame:
+    """
+    Samples rows from the metadata DataFrame based on specified conditions.
+
+    Args:
+        metadata (pd.DataFrame): The metadata DataFrame to sample from.
+        num_samples (int): The number of samples to retrieve.
+        conditions (dict): A dictionary specifying conditions for filtering. 
+                           Keys are column names, and values are lists of acceptable values or a single value.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the sampled rows.
+
+    Raises:
+        ValueError: If there are not enough samples available for the given criteria.
+    """
+    filtered_metadata = metadata
+
+    for key, value in conditions.items():
+        if isinstance(value, list):
+            filtered_metadata = filtered_metadata[filtered_metadata[key].isin(value)]
+        else:
+            filtered_metadata = filtered_metadata[filtered_metadata[key] == value]
+
+    if len(filtered_metadata) < num_samples:
+        raise ValueError(f"Not enough samples available for the given criteria. Available: {len(filtered_metadata)}, Required: {num_samples}")
+
+    samples = filtered_metadata.sample(num_samples)
+
+    return samples
+
+if __name__ == "__main__":
+    
+    metadata = pd.read_csv("/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/train_embeds.tsv", sep="\t")
+    conditions = {
+        "age": ["twenties", "thirties"],
+        "gender": "male"
+    }
+
+    num_samples = 10
+    sampled_metadata = sample_from_cv_metadata(metadata, num_samples, conditions)
+    print(sampled_metadata.head())
