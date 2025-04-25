@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Define the base sample directory
-SAMPLE_DIR="/home1/nmehlman/arts/pseudo_speakers/samples/synthetic_embeddings/cv_train/psg-21_cond_young"
-VAE_CHECKPOINT_PATH="/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_age_classifier/version_0/checkpoints/epoch=199-step=59400.ckpt"
+SAMPLE_DIR="/home1/nmehlman/arts/pseudo_speakers/samples/synthetic_embeddings/cv_train/psg-25_cond_young_female"
+VAE_CHECKPOINT_PATH="/project/shrikann_35/nmehlman/logs/ps_vae/cv_age_gender/version_0/checkpoints/epoch=189-step=56430.ckpt"
 SOURCE_AUDIO_PATH="/home1/nmehlman/nick_codebase/misc/test_audio.wav"
 SYNTHESIS_TYPE="conditional"
-CLASSIFIER_TARGET=0
-NUM_STEPS=1000
-STEP_SIZE=0.04
+CLASSIFIER_TARGET='{"age": 0, "gender": 1}'
+NUM_STEPS=5000
+STEP_SIZE=0.01
 NOISE_WEIGHT=1.0
 
 # Save the configuration information to a text file in the sample directory

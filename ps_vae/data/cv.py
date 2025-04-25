@@ -8,7 +8,10 @@ from ps_vae.utils import map_cv_gender_to_label, map_cv_age_to_label
 METADATA_TRANSFORMS = {
     "gender": lambda x: map_cv_gender_to_label(x['gender']),
     "age": lambda x: map_cv_age_to_label(x['age']),
-    "age_and_gender": lambda x: (map_cv_age_to_label(x['age']), map_cv_gender_to_label(x['gender']))
+    "age_and_gender": lambda x: {
+        "age": map_cv_age_to_label(x['age']), 
+        "gender": map_cv_gender_to_label(x['gender'])
+    }
 }
 
 class CVEmbeddingDataset(Dataset):

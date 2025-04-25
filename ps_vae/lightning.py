@@ -24,8 +24,19 @@ class PseudoSpeakerVAE(pl.LightningModule):
                 param.requires_grad = False
 
         if 'classifier' in hparams:
-            self.classifier = Classifier(**hparams["classifier"])
-            self.accuracy = Accuracy(task="multiclass", num_classes=hparams["classifier"]["num_classes"])
+            classifier_hparams = hparams["classifier"]
+            self.classifier = Classifier(**classifier_hparams)
+            
+            if isinstance(classifier_hparams['num_classes'], int): # Single label
+                self.multilabel = False
+                self.accuracy = Accuracy(task="multiclass", num_classes=hparams["classifier"]["num_classes"])
+            
+            else: # Multi-label
+                self.multilabel = True
+                self.accuracy = nn.ModuleDict({
+                    label_name: Accuracy(task="multiclass", num_classes=label_classes) 
+                    for label_name, label_classes in classifier_hparams['label_classes'].items()
+                })
         else:
             self.classifier = None
         
@@ -44,15 +55,33 @@ class PseudoSpeakerVAE(pl.LightningModule):
     def training_step(self, batch: tuple, batch_idx: int) -> float:
 
         x, y = batch
-        
+
         x_hat, mu, log_sigma = self(x)
         
         if self.classifier:
+            
             y_hat = self.classifier(mu)
-            classifier_loss = nn.functional.cross_entropy(y_hat, y)
-            classifier_acc = self.accuracy(y_hat, y)
-            self.log("train_classifier_acc", classifier_acc, sync_dist=True)
-            self.log("train_classifier_loss", classifier_loss, sync_dist=True)
+
+            if not self.multilabel:
+                
+                classifier_loss = nn.functional.cross_entropy(y_hat, y)
+                classifier_acc = self.accuracy(y_hat, y)
+                
+                self.log("train_classifier_acc", classifier_acc, sync_dist=True)
+                self.log("train_classifier_loss", classifier_loss, sync_dist=True)
+
+            else:   
+                classifier_loss = 0
+                for label_name in y_hat:
+                    
+                    classifier_acc = self.accuracy[label_name](y_hat[label_name], y[label_name])
+                    classifier_loss += nn.functional.cross_entropy(y_hat[label_name], y[label_name])
+                    
+                    self.log(f"train_classifier_acc_{label_name}", classifier_acc, sync_dist=True)
+                    self.log(f"train_classifier_loss_{label_name}", classifier_loss, sync_dist=True)
+                
+                classifier_loss /= len(self.classifier.label_classes)
+        
         else:
             classifier_loss = 0
 
@@ -85,13 +114,32 @@ class PseudoSpeakerVAE(pl.LightningModule):
         x_hat, mu, log_sigma = self(x)
         
         if self.classifier:
+            
             y_hat = self.classifier(mu)
-            classifier_loss = nn.functional.cross_entropy(y_hat, y)
-            classifier_acc = self.accuracy(y_hat, y)
-            self.log("val_classifier_acc", classifier_acc, sync_dist=True)
-            self.log("val_classifier_loss", classifier_loss, sync_dist=True)
+
+            if not self.multilabel:
+                
+                classifier_loss = nn.functional.cross_entropy(y_hat, y)
+                classifier_acc = self.accuracy(y_hat, y)
+                
+                self.log("val_classifier_acc", classifier_acc, sync_dist=True)
+                self.log("val_classifier_loss", classifier_loss, sync_dist=True)
+
+            else:   
+                classifier_loss = 0
+                for label_name in y_hat:
+                    
+                    classifier_acc = self.accuracy[label_name](y_hat[label_name], y[label_name])
+                    classifier_loss += nn.functional.cross_entropy(y_hat[label_name], y[label_name])
+                    
+                    self.log(f"val_classifier_acc_{label_name}", classifier_acc, sync_dist=True)
+                    self.log(f"val_classifier_loss_{label_name}", classifier_loss, sync_dist=True)
+                
+                classifier_loss /= len(self.classifier.label_classes)
+        
         else:
             classifier_loss = 0
+
 
         if self.use_cos_loss:
             recon_loss = nn.functional.cosine_embedding_loss(x_hat, x, torch.ones(x.size(0)).to(x.device))

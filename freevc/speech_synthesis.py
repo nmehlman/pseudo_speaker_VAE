@@ -1,7 +1,6 @@
 import torch
 import torchaudio
 import os
-import sys
 import certifi
 from utils import load_freevc_model
 
@@ -22,7 +21,7 @@ def run_embedding_conditioned_vc(
         source_audio = torchaudio.transforms.Resample(fs, FREE_VC_INPUT_SR)(source_audio)
     
     # Run conversion
-    converted_audio = free_vc_model.voice_conversion_embed(source_audio.squeeze(), speaker_embedding) # DEBUG
+    converted_audio = free_vc_model.voice_conversion_embed(source_audio.squeeze(), speaker_embedding.reshape(1,-1,1)) # DEBUG
     
     return converted_audio.squeeze(0)
 
@@ -59,7 +58,7 @@ if __name__ == "__main__":
         
         id = embed_file.replace(".pt", "") 
         
-        emedding = torch.load(os.path.join(embedding_dir, embed_file)).reshape(1,-1,1)
+        emedding = torch.load(os.path.join(embedding_dir, embed_file))
         converted_audio = run_embedding_conditioned_vc(emedding, source_audio_path, free_vc_model=model)
         torchaudio.save(os.path.join(save_dir, f"audio_{id}.wav"), converted_audio, FREE_VC_OUTPUT_SR)
         
