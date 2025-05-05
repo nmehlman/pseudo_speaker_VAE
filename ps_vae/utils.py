@@ -176,4 +176,4 @@ if __name__ == "__main__":
 
     num_samples = 10
     sampled_metadata = sample_from_cv_metadata(metadata, num_samples, conditions)
-    print(sampled_metadata.head())
+    print(sampled_metadata['path'])
