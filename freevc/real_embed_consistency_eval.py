@@ -7,7 +7,6 @@ import pandas as pd
 from itertools import product
 import torchaudio
 import tqdm
-import time
 
 os.environ["SSL_CERT_FILE"] = certifi.where()  # Set SSL_CERT_FILE for TTS
 
@@ -29,9 +28,7 @@ save_dir = "/home1/nmehlman/arts/pseudo_speakers/samples/demo_consistency/"
 model = load_freevc_model(vc_ckpt_dir)
 
 # Load CV metadata
-start_time = time.time()
 metadata = pd.read_csv(metadata_path, sep="\t")
-print(f"Metadata loading took {time.time() - start_time:.2f} seconds")
 
 for src_demo in DEMOS_TO_TEST: # Conversion goes source_audio -> target embedding
     for tgt_demo in DEMOS_TO_TEST:
