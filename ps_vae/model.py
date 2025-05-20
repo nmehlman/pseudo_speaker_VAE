@@ -67,18 +67,6 @@ class VAEModel(nn.Module):
         if self.normalize_decoder:
             x_hat = F.normalize(x_hat, p=2, dim=1)
         return x_hat
-
-class EmbeddingClassifier(nn.Module):
-    def __init__(self, input_dim: int = 512, num_classes: int = 10):
-        super().__init__()
-        self.classifier = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(512, num_classes),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.classifier(x)
     
 if __name__ == "__main__":
     model = VAEModel(784, 20)

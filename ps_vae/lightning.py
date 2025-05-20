@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 import torch.nn as nn
 from ps_vae.model import VAEModel
-from ps_vae.classifier import Classifier
+from ps_vae.latent_classifier import LatentClassifier
 import torch
 from torch.optim import Adam
 from torchmetrics import Accuracy
@@ -25,7 +25,7 @@ class PseudoSpeakerVAE(pl.LightningModule):
 
         if 'classifier' in hparams:
             classifier_hparams = hparams["classifier"]
-            self.classifier = Classifier(**classifier_hparams)
+            self.classifier = LatentClassifier(**classifier_hparams)
             
             if isinstance(classifier_hparams['num_classes'], int): # Single label
                 self.multilabel = False

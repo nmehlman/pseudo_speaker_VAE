@@ -46,7 +46,7 @@ def stratified_sampling(
         valid_samples = [i for i in range(len(files)) if filter_fcn(metadata[files[i]])]
 
     if stratification_fcn is None:
-        return np.random.choice(valid_samples, n_samples, replace=False)
+        return np.random.choice(valid_samples, n_samples, replace=False).tolist()
     else:
         stratification_valid = [stratification_fcn(metadata[files[i]]) for i in valid_samples]
         unique_stratifications = list(set(stratification_valid))
@@ -62,9 +62,10 @@ def stratified_sampling(
 if __name__ == "__main__":
     
     N_SAMPLES = 1000
-    DEMOGRAPHIC = "age"
+    DEMOGRAPHIC = "gender"
     APPLY_AGE_GROUPINGS = True
-    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_age_classifier/version_0/checkpoints/epoch=199-step=59400.ckpt'
+    USE_SEX = True
+    MODEL_CKPT = '/project/shrikann_35/nmehlman/logs/ps_vae/cv_freevc_gender_classifier/version_3/checkpoints/epoch=199-step=59400.ckpt'
     DATA_ROOT = "/project/shrikann_35/tiantiaf/arts/cv-corpus-11.0-2022-09-21/en/"
     SE_MODEL = "vc"
     SAVE_AS = "/home1/nmehlman/arts/pseudo_speakers/pseudo_speaker_VAE/plots/vae_latent_gender+classifier.png"
@@ -85,16 +86,27 @@ if __name__ == "__main__":
     
     if model:
         samples = []
+        new_sample_idx = []
         for i in sample_idx:
-            _, mu, _ = model(dataset[i][0].unsqueeze(0))
+            try: # Needed as a patch to fix CARC missing data issues
+                _, mu, _ = model(dataset[i][0].unsqueeze(0))
+            except Exception as e:
+                print(f"Error processing sample {i}: {e}")
+                continue
             samples.append(mu.detach().squeeze().numpy())
+            new_sample_idx.append(i)
         samples = np.stack(samples, axis=0)
-        
     else:
         samples = np.stack([dataset[i][0].numpy() for i in sample_idx], axis=0)
+    
+    sample_idx = new_sample_idx
 
     demos = [dataset[i][1][DEMOGRAPHIC] for i in sample_idx]
     demos = [demo if demo else "Unknown" for demo in demos]
+    
+    if USE_SEX and DEMOGRAPHIC == 'gender':
+        samples = np.stack([samples[i] for i in range(len(sample_idx)) if demos[i] in ['male', 'female']], axis=0)
+        demos = [demos[i] for i in range(len(sample_idx)) if demos[i] in ['male', 'female']]
 
     if APPLY_AGE_GROUPINGS and DEMOGRAPHIC == "age":
         demos = [AGE_GROUPINGS[demo] for demo in demos]
@@ -113,10 +125,14 @@ if __name__ == "__main__":
         xlabel, ylabel = "PCA 1", "PCA 2"
 
     scatter = plt.scatter(
-        samples_proj[:, 0], samples_proj[:, 1], c=demos_int, cmap="tab10", marker="."
+        samples_proj[:, 0], samples_proj[:, 1], c=demos_int, cmap="Set2", marker="."
     )
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+    
+    if USE_SEX:
+        DEMOGRAPHIC = 'sex'
+    
     plt.title("{} of {} colored by {}".format("TSNE" if USE_TSNE else "PCA", "latent vectors" if model else "raw embeddings", DEMOGRAPHIC))
 
     handles, _ = scatter.legend_elements(prop="colors")

@@ -1,18 +1,18 @@
-"""Pytorch Lightning Training Script for PS-VAE"""
+"""Pytorch Lightning Training Script for a simple embedding classifier."""
 
 import argparse
-from utils import load_yaml_config, LatentSpacePCACallback
+
+from pytorch_lightning.callbacks import ModelCheckpoint
+from ps_vae.utils import load_yaml_config
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
-from pytorch_lightning.strategies.ddp import DDPStrategy
 from ps_vae.data.cv import get_cv_dataloaders
 from ps_vae.data.vctk import get_vctk_dataloaders
-from ps_vae.lightning import PseudoSpeakerVAE
+from ps_vae.embedding_classifier.embedding_classifier import EmbeddingClassifier
 
 import torch
 from pytorch_lightning.loggers import TensorBoardLogger
 import os
-from pytorch_lightning.callbacks import ModelCheckpoint
 
 torch.set_warn_always(False)
 torch.set_float32_matmul_precision('medium')
@@ -47,16 +47,9 @@ if __name__ == "__main__":
         )
     else:
         raise ValueError(f"Unknown dataset {dataset_name}")
-    
-    if config.get("pca_batches", None):
-        callbacks = [
-            LatentSpacePCACallback(dataloader=dataloaders["val"], num_batches=config["pca_batches"])
-        ]
-    else:
-        callbacks = []
 
     # Create Lightning module
-    pl_model = PseudoSpeakerVAE(**config["lightning"])
+    pl_model = EmbeddingClassifier(**config["lightning"])
 
     # Create logger
     logger = TensorBoardLogger(**config["tensorboard"])
@@ -69,13 +62,11 @@ if __name__ == "__main__":
         save_top_k=1,
         mode="min"
     )
-    callbacks.append(checkpoint_callback)
 
     # Make trainer
     trainer = Trainer(
         logger=logger,
-        callbacks=callbacks,
-        strategy=DDPStrategy(find_unused_parameters=False),
+        callbacks=checkpoint_callback,
         **config["trainer"]
     )
 

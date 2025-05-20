@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Classifier(nn.Module):
+class LatentClassifier(nn.Module):
     
     def __init__(self, input_dim: int, num_classes: dict | int, num_layers: int = 1, hidden_dim: int = 128, activation: str = 'relu'):
         
-        super(Classifier, self).__init__()
+        super(LatentClassifier, self).__init__()
 
         # Handle backward compatibility
         self.single_label_mode = isinstance(num_classes, int)
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     num_layers = 2
     hidden_dim = 128
     activation = 'relu'
-    model = Classifier(input_dim, num_classes, num_layers, hidden_dim, activation)
+    model = LatentClassifier(input_dim, num_classes, num_layers, hidden_dim, activation)
     x = torch.randn(32, input_dim)  # Example input
     outputs = model(x)  # Forward pass  
     for label, output in outputs.items():

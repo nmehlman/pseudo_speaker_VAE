@@ -14,7 +14,6 @@ if __name__ == "__main__":
     with open(manifest_path, "r") as f: # Maifest is a list of dictionaries with keys 'audio_filepath' and 'save_filepath'
         manifest = json.load(f)
 
-    
     for sample in tqdm.tqdm(manifest, desc="Exporting embeddings"):
         
         audio = sample['audio_filepath']

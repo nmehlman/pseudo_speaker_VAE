@@ -7,19 +7,20 @@ import json
 import argparse
 import torch.nn.functional as F
 
-def unconditional_synthesis(vae_model: PseudoSpeakerVAE, num_samples: int) -> Tensor:
+def unconditional_synthesis(vae_model: PseudoSpeakerVAE, num_samples: int, device: str) -> Tensor:
     """
     Generate unconditioned samples using the provided VAE model.
     
     Args:
         vae_model (PseudoSpeakerVAE): The pre-trained VAE model.
         num_samples (int): Number of samples to generate.
+        device (str): Device to use for computation (e.g., 'cpu' or 'cuda').
     
     Returns:
         list: Generated samples.
     """
     dim = vae_model.hparams.model['latent_dim']
-    z = torch.randn((num_samples, dim))
+    z = torch.randn((num_samples, dim), device=device)
     
     x_hat = vae_model.decode(z).detach().cpu()
     
@@ -32,7 +33,8 @@ def conditional_synthesis(
     step_size: float = 0.01,
     num_steps: int = 100,
     noise_weight: float = 1.0,
-    return_history: bool = False
+    return_history: bool = False,
+    device: str = "cpu"
     ) -> Tensor:
     """
     Generate conditioned samples using the provided VAE model.
@@ -43,8 +45,9 @@ def conditional_synthesis(
         classifier_target (int): Target class for the classifier.
         step_size (float, optional): Step size for the gradient ascent. Default is 0.01.
         num_steps (int, optional): Number of steps for the gradient ascent. Default is 100.
-        binary (bool, optional): Whether the classifier is binary. Default is False.
+        noise_weight (float, optional): Weight of the noise added during synthesis. Default is 1.0.
         return_history (bool, optional): Return history of z iterations. Default is False.
+        device (str, optional): Device to use for computation. Default is 'cpu'.
     
     Returns:
         Tensor: Generated samples.
@@ -67,7 +70,7 @@ def conditional_synthesis(
         return log_p_y_given_z
     
     dim = vae_model.hparams.model['latent_dim']
-    z = torch.randn((num_samples, dim), requires_grad=True)
+    z = torch.randn((num_samples, dim), device=device, requires_grad=True)
     
     pbar = tqdm(range(num_steps), desc="Generating samples")
     history = []
@@ -118,6 +121,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_steps", type=int, default=5000, help="Number of gradient ascent steps (only for conditional synthesis).")
     parser.add_argument("--step_size", type=float, default=0.01, help="Step size for gradient ascent (only for conditional synthesis).")
     parser.add_argument("--noise_weight", type=float, default=1.0, help="Weight of the noise added during synthesis (only for conditional synthesis).")
+    parser.add_argument("--device", type=str, default="cpu", help="Device to use for computation (e.g., 'cpu' or 'cuda').")
 
     args = parser.parse_args()
 
@@ -128,6 +132,7 @@ if __name__ == "__main__":
         classifier_target = int(args.classifier_target)
 
     model = PseudoSpeakerVAE.load_from_checkpoint(args.vae_ckpt_path)
+    model = model.to(args.device)
 
     if args.synthesis_type == "conditional":
         x_hat = conditional_synthesis(
@@ -136,12 +141,14 @@ if __name__ == "__main__":
             num_samples=args.n_samples,
             num_steps=args.num_steps,
             step_size=args.step_size,
-            noise_weight=args.noise_weight
+            noise_weight=args.noise_weight,
+            device=args.device
         )
     elif args.synthesis_type == "unconditional":
         x_hat = unconditional_synthesis(
             model,
-            num_samples=args.n_samples
+            num_samples=args.n_samples,
+            device=args.device
         )
 
     os.makedirs(args.save_dir, exist_ok=True)

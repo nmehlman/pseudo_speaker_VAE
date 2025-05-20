@@ -60,5 +60,5 @@ if __name__ == "__main__":
         
         emedding = torch.load(os.path.join(embedding_dir, embed_file))
         converted_audio = run_embedding_conditioned_vc(emedding, source_audio_path, free_vc_model=model)
-        torchaudio.save(os.path.join(save_dir, f"audio_{id}.wav"), converted_audio, FREE_VC_OUTPUT_SR)
+        torchaudio.save(os.path.join(save_dir, f"audio_{source_audio_path.split('/')[-1].split('.')[0]}_embed_{id}.wav"), converted_audio, FREE_VC_OUTPUT_SR)
         
