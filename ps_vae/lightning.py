@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 import torch.nn as nn
 from ps_vae.model import VAEModel
+from ps_vae.embedding_classifier.embedding_classifier import EmbeddingClassifier
 from ps_vae.latent_classifier import LatentClassifier
 import torch
 from torch.optim import Adam
@@ -39,9 +40,20 @@ class PseudoSpeakerVAE(pl.LightningModule):
                 })
         else:
             self.classifier = None
+
+        if 'consistency_classifier_ckpt' in hparams:
+            self.consistency_classifier = EmbeddingClassifier.load_from_checkpoint(
+                hparams['consistency_classifier_ckpt']
+            )
+            for param in self.consistency_classifier.parameters():
+                param.requires_grad = False
+            self.consistency_classifier.eval()
+        else:
+            self.consistency_classifier = None
         
         self.kl_loss_weight = hparams.get("kl_loss_weight", 1.0)
         self.classifier_loss_weight = hparams.get("classifier_loss_weight", 1.0)
+        self.consitency_loss_weight = hparams.get("consistency_loss_weight", 1.0)
         self.use_cos_loss = hparams.get("use_cos_loss", False)
 
     def forward(self, x: torch.Tensor) -> tuple:
@@ -85,6 +97,16 @@ class PseudoSpeakerVAE(pl.LightningModule):
         else:
             classifier_loss = 0
 
+        if self.consistency_classifier:
+            y_hat_consistency = self.consistency_classifier(x_hat)
+            consistency_loss = nn.functional.cross_entropy(y_hat_consistency, y)
+            consistency_acc = self.accuracy(y_hat_consistency, y)
+                
+            self.log("train_consistency", consistency_acc, sync_dist=True)
+            self.log("train_consistency_loss", consistency_loss, sync_dist=True)
+        else:
+            consistency_loss = 0
+
         if self.use_cos_loss:
             recon_loss = nn.functional.cosine_embedding_loss(x_hat, x, torch.ones(x.size(0)).to(x.device))
         else:
@@ -97,7 +119,8 @@ class PseudoSpeakerVAE(pl.LightningModule):
         total_loss = (
             recon_loss +
             self.kl_loss_weight * kl_loss + 
-            self.classifier_loss_weight * classifier_loss
+            self.classifier_loss_weight * classifier_loss +
+            self.consitency_loss_weight * consistency_loss
         )
         
         # Logging
@@ -140,6 +163,15 @@ class PseudoSpeakerVAE(pl.LightningModule):
         else:
             classifier_loss = 0
 
+        if self.consistency_classifier:
+            y_hat_consistency = self.consistency_classifier(x_hat)
+            consistency_loss = nn.functional.cross_entropy(y_hat_consistency, y)
+            consistency_acc = self.accuracy(y_hat_consistency, y)
+                
+            self.log("val_consistency", consistency_acc, sync_dist=True)
+            self.log("val_consistency_loss", consistency_loss, sync_dist=True)
+        else:
+            consistency_loss = 0
 
         if self.use_cos_loss:
             recon_loss = nn.functional.cosine_embedding_loss(x_hat, x, torch.ones(x.size(0)).to(x.device))
@@ -153,7 +185,8 @@ class PseudoSpeakerVAE(pl.LightningModule):
         total_loss = (
             recon_loss +
             self.kl_loss_weight * kl_loss + 
-            self.classifier_loss_weight * classifier_loss
+            self.classifier_loss_weight * classifier_loss +
+            self.consitency_loss_weight * consistency_loss
         )
         
         # Logging
